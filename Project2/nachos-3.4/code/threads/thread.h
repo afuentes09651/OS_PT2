@@ -82,7 +82,8 @@ class Thread {
     int machineState[MachineStateSize];  // all registers except for stackTop
 
   public:
-    Thread(char* debugName);		// initialize a Thread 
+    Thread(char* debugName);  // initialize a Thread 
+    Thread(char* threadName, char* fileName);
     ~Thread(); 				// deallocate a Thread
 					// NOTE -- thread being deleted
 					// must not be running when delete 
@@ -101,6 +102,8 @@ class Thread {
 						// overflowed its stack
     void setStatus(ThreadStatus st) { status = st; }
     char* getName() { return (name); }
+    char* getFN() {return fn;} //edit AF
+    void setFN(char* filename){fn = filename;}
     void Print() { printf("%s, ", name); }
 	
 	void setID(int ID);	// Set a new ID.
@@ -113,6 +116,7 @@ class Thread {
 					// (If NULL, don't deallocate stack)
     ThreadStatus status;		// ready, running or blocked
     char* name;
+    char* fn; //edit AF
 
     void StackAllocate(VoidFunctionPtr func, int arg);
     					// Allocate a stack for thread.

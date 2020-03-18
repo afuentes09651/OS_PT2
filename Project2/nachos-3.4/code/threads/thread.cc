@@ -47,6 +47,22 @@ Thread::Thread(char* threadName)
 #endif
 }
 
+Thread::Thread(char* threadName, char* fileName)
+{
+    name = threadName;
+    fn = fileName;
+    stackTop = NULL;
+    stack = NULL;
+    status = JUST_CREATED;
+#ifdef USER_PROGRAM
+    space = NULL;
+	parent = NULL;
+	ID = 0;
+	killNewChild = false;
+	isJoined = false;
+#endif
+}
+
 //----------------------------------------------------------------------
 // Thread::~Thread
 // 	De-allocate a thread.

@@ -24,6 +24,8 @@ void
 StartProcess(char *filename)
 {
     OpenFile *executable = fileSystem->Open(filename);
+
+    printf("Attempting to open file %s", filename);
 	
     AddrSpace *space;
 
@@ -42,6 +44,7 @@ StartProcess(char *filename)
 	
     space = new AddrSpace(executable);    
     currentThread->space = space;
+    currentThread->setFN(filename);
 
     delete executable;			// close file
 

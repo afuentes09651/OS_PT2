@@ -200,7 +200,8 @@ ExceptionHandler(ExceptionType which)
 				if(!currentThread->killNewChild)	// If so...
 				{
 					//edit AF, made the Thread name match the File Name. Removed the delete filename; that will be done in exit
-					Thread* execThread = new Thread(filename);	// Make a new thread for the process.
+					Thread* execThread = new Thread("Wubba", filename);	// Make a new thread for the process.
+					delete filename;
 					execThread->space = space;	// Set the address space to the new space.
 					execThread->setID(threadID);	// Set the unique thread ID
 					activeThreads->Append(execThread);	// Put it on the active list.
@@ -253,7 +254,6 @@ ExceptionHandler(ExceptionType which)
 				
 				if(currentThread->space)	// Delete the used memory from the process.
 					delete currentThread->space;
-					delete [] currentThread->getName(); //edit AF
 				currentThread->Finish();	// Delete the thread.
 
 				break;
@@ -342,7 +342,8 @@ ExceptionHandler(ExceptionType which)
 			machine->pageTable[vpNum].physicalPage = index; //we were tasked to update currentThread’s pageTable[].physicalPage
 			machine->pageTable[vpNum].valid = TRUE; //tasked to also make the valid bit true
 
-			OpenFile *executable = fileSystem->Open(currentThread->getName()); //open the file
+			printf("\nOpening file %s\n",currentThread->getFN());
+			OpenFile *executable = fileSystem->Open(currentThread->getFN()); //open the file
 			
 			//load single page into main memory using ReadAt() 
 			executable->ReadAt(&(machine->mainMemory[index * PageSize]),

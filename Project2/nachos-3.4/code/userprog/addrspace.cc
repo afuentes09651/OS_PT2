@@ -127,7 +127,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 		//Take the global bitmap and set the relevant chunks
 		//to indicate that the memory is in use
-		memMap->Mark(i + startPage);
+		//memMap->Mark(i + startPage);  //edit AF, no longer needed
     }
 	
 	memMap->Print();	// Useful!
@@ -175,10 +175,12 @@ AddrSpace::~AddrSpace()
 	// which in turn only happens after space is set to true
 	if(space)
 	{
-		for(int i = startPage; i < numPages + startPage; i++)	// We need an offset of startPage + numPages for clearing.
-			memMap->Clear(i);
+		for(int i = 0; i < numPages; i++)	// We need an offset of startPage + numPages for clearing.
+			if(pageTable[i].valid){
+				memMap->Clear(pageTable[i].physicalPage);
+			}
 
-		delete pageTable;
+		delete [] pageTable;
 
 		memMap->Print();
 	}
