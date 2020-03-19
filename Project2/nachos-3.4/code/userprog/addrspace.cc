@@ -19,6 +19,7 @@
 #include "system.h"
 #include "addrspace.h"
 
+Thread *ipt[NumPhysPages]; // inverted page table
 
 //----------------------------------------------------------------------
 // SwapHeader
@@ -74,11 +75,16 @@ AddrSpace::AddrSpace(OpenFile *executable)
 			+ UserStackSize;	// we need to increase the size
 						// to leave room for the stack
     numPages = divRoundUp(size, PageSize);
+	//pageUsed = new bool[numPages];
     size = numPages * PageSize;
 
-	//Change this to reference the bitmap for free pages
-	//instead of total amount of pages
-	//This requires a global bitmap instance
+	Swap(size);
+
+	int exeSize = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
+	char *exeBuff = new char[exeSize];
+
+	exeFile->ReadAt(exeBuff, exeSize, sizeof(noffH));
+	swapFile->WriteAt(exeBuff, exeSize, 0);
 	
 	counter = 0;
 	for(i = 0; i < NumPhysPages && counter < numPages; i++)
@@ -93,72 +99,25 @@ AddrSpace::AddrSpace(OpenFile *executable)
 		else
 			counter = 0;
 	}
-	
-	DEBUG('a', "%i contiguous blocks found for %i pages\n", counter, numPages);
-
-	//If no memory available, terminate
-	if(counter < numPages)
-	{
-		printf("Not enough contiguous memory for new process; terminating!.\n");
-		currentThread->killNewChild = true;
-		return;
-	}
 
 	//If we get past the if statement, then there was sufficient space
 	space = true;
 
-	//This safeguards against the loop terminating due to reaching
+	//This safeguards against the lipt terminating due to reaching
 	//the end of the bitmap but no contiguous space being available
 
-    DEBUG('a', "Initializing address space, numPages=%d, size=%d\n", 
-					numPages, size);
-// first, set up the translation 
+    DEBUG('a', "Initializing address space, numPages=%d, size=%d\n", numPages, size);
+
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
 		//pageTable[i].physicalPage = i;	//Replace with pageTable[i].physicalPage = i + startPage;
-		pageTable[i].physicalPage = i + startPage;
+		pageTable[i].physicalPage = -1;
 		pageTable[i].valid = FALSE; //edit AF, setting valid bits to false per request of instructions
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
 		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
-						// a separate page, we could set its 
-						// pages to be read-only
-
-		//Take the global bitmap and set the relevant chunks
-		//to indicate that the memory is in use
-		memMap->Mark(i + startPage);
     }
-	
-	memMap->Print();	// Useful!
-    
-// zero out the entire address space, to zero the unitialized data segment 
-// and the stack segment
-//    bzero(machine->mainMemory, size); rm for Solaris
-	//Edited version adds startPage * PageSize to the address. Hopefully this is proper.
-	//Either way, it appears to zero out only however much memory is needed,
-	//so zeroing out all memory doesn't seem to be an issue. - Devin
-	
-	pAddr = startPage * PageSize;
-	
-    memset(machine->mainMemory + pAddr, 0, size);
-
-// then, copy in the code and data segments into memory
-//Change these too since they assume virtual page = physical page
-	  //Fix this by adding startPage times page size as an offset
-    if (noffH.code.size > 0) {
-        DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
-			noffH.code.virtualAddr + (startPage * PageSize), noffH.code.size);
-        //executable->ReadAt(&(machine->mainMemory[noffH.code.virtualAddr + pAddr]),
-			//noffH.code.size, noffH.code.inFileAddr);
-    }
-    if (noffH.initData.size > 0) {
-        DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
-			noffH.initData.virtualAddr + (startPage * PageSize), noffH.initData.size);
-        //executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr + pAddr]),
-			//noffH.initData.size, noffH.initData.inFileAddr);
-    }
-
 }
 
 //----------------------------------------------------------------------
@@ -175,24 +134,26 @@ AddrSpace::~AddrSpace()
 	// which in turn only happens after space is set to true
 	if(space)
 	{
-		for(int i = startPage; i < numPages + startPage; i++)	// We need an offset of startPage + numPages for clearing.
-			memMap->Clear(i);
+		for(int i = startPage; i < numPages; i++)	// We need an offset of startPage + numPages for clearing.
+			if(pageTable[i].valid){
+				memMap->Clear(pageTable[i].physicalPage);
+				ipt[pageTable[i].physicalPage] = NULL;
+			}
 
-		delete pageTable;
-
+		delete[] pageTable;
+		//clear ipt?
 		memMap->Print();
 	}
 	delete exeFile;
 	DeleteSwapFile();
-	delete pageTable;
 }
 
 
 // Adam Roach
-void AddrSpace::Swap(int page){
+void AddrSpace::Swap(int size){
 
 	sprintf(swapFileName, "%i.swap", currentThread->getID());
-	fileSystem->Create(swapFileName, page * PageSize);
+	fileSystem->Create(swapFileName, size);
 	swapFile = fileSystem->Open(swapFileName);
 }
 
@@ -215,7 +176,7 @@ bool AddrSpace::SwapIn(int vPage, int pPage){
 		setDirty(vPage, false);
 	}
 
-	pageUsed[vPage] = true;
+	//pageUsed[vPage] = true;
 	return assert;
 }
 
@@ -228,7 +189,7 @@ bool AddrSpace::SwapOut(int pPage){
 		return false;
 	}
 
-	if(pageTable[page].dirty && !pageUsed[page]){
+	if(pageTable[page].dirty){
 		int charsWrote;
 		char *pos = machine->mainMemory + pPage * PageSize;
 
@@ -243,13 +204,67 @@ bool AddrSpace::SwapOut(int pPage){
 	setValidity(page, false);
 	setDirty(page, false);
 	pageTable[page].physicalPage = -1;
-	pageUsed[page] = true;
+	//pageUsed[page] = true;
 
 
 	return true;
 }
 
+void AddrSpace::LoadPage(int vAddrReg){
 
+
+	printf("PAGE FAULT\n");
+
+	int virtPage = vAddrReg / PageSize;
+	int pPage = 0;
+	unsigned int pageStart, offset, dataSize;
+
+	printf("Init space:\n");
+	memMap->Print();
+
+	pPage = memMap->Find(); // find space for pPage
+
+	if(pPage == -1){
+		//error? no page found
+		printf("No page found\n");
+
+		if(!ipt[pPage]->space->SwapOut(pPage)){
+			delete swapFile;
+			return;
+		}
+			
+	}
+
+	ipt[pPage] = currentThread;
+	pageTable[virtPage].physicalPage = pPage;
+
+
+	printf("Space after allocation:\n");
+	memMap->Print();
+	
+	//if(pageUsed[virtPage]){
+		SwapIn(virtPage, pPage);
+		delete swapFile;
+		//return; // todo: may need to lock
+	//}
+
+	bzero(machine->mainMemory + PageSize * pPage, PageSize);
+
+	// this logic may be completely wrong
+	// Write code segment
+
+	exeFile->ReadAt(&(machine->mainMemory[PageSize * pPage]), PageSize, virtPage * PageSize);
+ 
+
+
+	char *pos = machine->mainMemory + pPage * PageSize;
+	swapFile->WriteAt(pos, PageSize, virtPage * PageSize);
+
+	setValidity(virtPage, true);
+	setDirty(virtPage, false);
+
+	return;
+}
 
 // Adam Roach
 

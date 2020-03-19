@@ -37,7 +37,7 @@ class AddrSpace {
     void DeleteSwapFile();
     bool SwapIn(int vPage, int pPage);
     bool SwapOut(int pPage);
-  
+    void LoadPage(int vAddrReg);
     // valid - Set true if page is in physical memory.
     void setValidity(int vPage, bool valid){
       pageTable[vPage].valid = valid;
@@ -54,7 +54,7 @@ class AddrSpace {
       }
       return -1;
     }
-    bool *pageUsed;
+
     // End AR
   private:
     //AR
