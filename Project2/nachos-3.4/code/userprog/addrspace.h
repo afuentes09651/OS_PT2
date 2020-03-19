@@ -54,6 +54,7 @@ class AddrSpace {
       }
       return -1;
     }
+    bool *pageUsed;
     // End AR
   private:
     //AR

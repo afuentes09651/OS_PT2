@@ -182,6 +182,9 @@ AddrSpace::~AddrSpace()
 
 		memMap->Print();
 	}
+	delete exeFile;
+	DeleteSwapFile();
+	delete pageTable;
 }
 
 
@@ -207,14 +210,43 @@ bool AddrSpace::SwapIn(int vPage, int pPage){
 	bool assert = charsRead == PageSize; // ensure read the correct size of data
 
 	if(assert){
-		// set bits
+		// in physical memory, not modified by by machine
+		setValidity(vPage, true);
+		setDirty(vPage, false);
 	}
 
-
+	pageUsed[vPage] = true;
+	return assert;
 }
 
 bool AddrSpace::SwapOut(int pPage){
-	return false;
+
+	int page = getPageNum(pPage);
+
+	if(page == -1){
+		printf("ERROR: Could not swap page!\n");
+		return false;
+	}
+
+	if(pageTable[page].dirty && !pageUsed[page]){
+		int charsWrote;
+		char *pos = machine->mainMemory + pPage * PageSize;
+
+		swapFile->WriteAt(pos, PageSize, page * PageSize);
+		if(charsWrote != PageSize){
+			//some shit fucked up
+			printf("some shit fukced up\n");
+			return false;
+		}
+	} 
+
+	setValidity(page, false);
+	setDirty(page, false);
+	pageTable[page].physicalPage = -1;
+	pageUsed[page] = true;
+
+
+	return true;
 }
 
 
