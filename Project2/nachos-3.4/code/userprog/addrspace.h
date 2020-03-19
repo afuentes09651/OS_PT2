@@ -31,7 +31,16 @@ class AddrSpace {
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch 
 
+    // AR
+    void Swap(int page);
+    void DeleteSwapFile();
+
+    
   private:
+    //AR
+    OpenFile *exeFile; // executable
+    OpenFile *swapFile; // swap file
+
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
@@ -39,6 +48,9 @@ class AddrSpace {
 	unsigned int startPage;		//Page number that the program starts at
 								//in physical memory
 	bool space;		//Boolean to remember if there was enough space or not
+
+  //AR
+  char swapFileName[12];
 };
 
 #endif // ADDRSPACE_H

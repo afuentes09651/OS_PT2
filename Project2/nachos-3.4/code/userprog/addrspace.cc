@@ -184,6 +184,23 @@ AddrSpace::~AddrSpace()
 	}
 }
 
+
+// Adam Roach
+void AddrSpace::Swap(int page){
+
+	sprintf(swapFileName, "%i.swap", currentThread->getID());
+	fileSystem->Create(swapFileName, page * PageSize);
+	swapFile = fileSytem->Open(swapFileName);
+}
+
+void AddrSpace::DeleteSwapFile(){
+	delete swapFile;
+	fileSystem->Remove(swapFileName);
+}
+
+
+
+// Adam Roach
 //----------------------------------------------------------------------
 // AddrSpace::InitRegisters
 // 	Set the initial values for the user-level register set.

@@ -101,6 +101,7 @@ class Thread {
 						// overflowed its stack
     void setStatus(ThreadStatus st) { status = st; }
     char* getName() { return (name); }
+    
     void Print() { printf("%s, ", name); }
 	
 	void setID(int ID);	// Set a new ID.
