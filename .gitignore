@@ -1,0 +1,11 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+
+Mkfile.old
+Mkfile.common
+Mkfile.dep
+nachos
