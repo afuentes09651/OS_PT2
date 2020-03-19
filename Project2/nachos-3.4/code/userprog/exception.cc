@@ -28,7 +28,7 @@
 #include "syscall.h"
 #include "addrspace.h"   // FA98
 #include "sysdep.h"   // FA98
-#include "noff.h"
+
 
 // begin FA98
 

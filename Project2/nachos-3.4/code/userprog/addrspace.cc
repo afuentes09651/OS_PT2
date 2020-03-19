@@ -18,7 +18,7 @@
 #include "copyright.h"
 #include "system.h"
 #include "addrspace.h"
-#include "noff.h"
+
 
 //----------------------------------------------------------------------
 // SwapHeader
@@ -59,7 +59,7 @@ SwapHeader (NoffHeader *noffH)
 
 AddrSpace::AddrSpace(OpenFile *executable)
 {
-    NoffHeader noffH;
+    exeFile = executable;
     unsigned int i, size, pAddr, counter;
 	space = false;
 
@@ -190,7 +190,7 @@ void AddrSpace::Swap(int page){
 
 	sprintf(swapFileName, "%i.swap", currentThread->getID());
 	fileSystem->Create(swapFileName, page * PageSize);
-	swapFile = fileSytem->Open(swapFileName);
+	swapFile = fileSystem->Open(swapFileName);
 }
 
 void AddrSpace::DeleteSwapFile(){
@@ -198,9 +198,30 @@ void AddrSpace::DeleteSwapFile(){
 	fileSystem->Remove(swapFileName);
 }
 
+bool AddrSpace::SwapIn(int vPage, int pPage){
+	int charsRead;
+	
+	char *pos = machine->mainMemory + (pPage * PageSize); // use physical page * size to get location to read
+
+	charsRead = swapFile->ReadAt(pos, PageSize, vPage * PageSize);
+	bool assert = charsRead == PageSize; // ensure read the correct size of data
+
+	if(assert){
+		// set bits
+	}
+
+
+}
+
+bool AddrSpace::SwapOut(int pPage){
+	return false;
+}
+
 
 
 // Adam Roach
+
+
 //----------------------------------------------------------------------
 // AddrSpace::InitRegisters
 // 	Set the initial values for the user-level register set.
