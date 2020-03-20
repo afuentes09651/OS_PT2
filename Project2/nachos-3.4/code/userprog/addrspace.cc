@@ -152,7 +152,7 @@ AddrSpace::~AddrSpace()
 // Adam Roach
 void AddrSpace::Swap(int size){
 
-	sprintf(swapFileName, "%i.swap", currentThread->getID());
+	printf(swapFileName, "%i.swap", currentThread->getID());
 	fileSystem->Create(swapFileName, size);
 	swapFile = fileSystem->Open(swapFileName);
 }
@@ -168,7 +168,7 @@ bool AddrSpace::SwapIn(int vPage, int pPage){
 	char *pos = machine->mainMemory + (pPage * PageSize); // use physical page * size to get location to read
 
 	charsRead = swapFile->ReadAt(pos, PageSize, vPage * PageSize);
-	bool assert = charsRead == PageSize; // ensure read the correct size of data
+	bool assert = (charsRead == PageSize); // ensure read the correct size of data
 
 	if(assert){
 		// in physical memory, not modified by by machine
@@ -196,7 +196,7 @@ bool AddrSpace::SwapOut(int pPage){
 		swapFile->WriteAt(pos, PageSize, page * PageSize);
 		if(charsWrote != PageSize){
 			//some shit fucked up
-			printf("some shit fukced up\n");
+			printf("some shit fucked up\n");
 			return false;
 		}
 	} 
