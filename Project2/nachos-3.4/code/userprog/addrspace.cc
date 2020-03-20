@@ -77,15 +77,21 @@ AddrSpace::AddrSpace(OpenFile *executable)
     numPages = divRoundUp(size, PageSize);
 	//pageUsed = new bool[numPages];
     size = numPages * PageSize;
-
+	//Let's head to swap function...
 	Swap(size);
-
+	//After coming back from swap...
 	int exeSize = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
+	//This int represents the size of the buffer.
 	char *exeBuff = new char[exeSize];
-
+	//This is the pointer to the actual buffer.
 	exeFile->ReadAt(exeBuff, exeSize, sizeof(noffH));
+	//ReadAt called on executable to copy its data to the buffer.
 	swapFile->WriteAt(exeBuff, exeSize, 0);
-	
+	//WriteAt called on the swap file to write data from the buffer to the swapfile.
+	//According to TA's notes, we should:
+	//delete the pointer to the buffer and swap files to conserve memory.
+	//Set up initial pageTables: Define based -V, -E, and -H
+	//Set Valid bit and all other values to false.
 	counter = 0;
 	for(i = 0; i < NumPhysPages && counter < numPages; i++)
 	{
@@ -151,10 +157,13 @@ AddrSpace::~AddrSpace()
 
 // Adam Roach
 void AddrSpace::Swap(int size){
-
+	
 	printf(swapFileName, "%i.swap", currentThread->getID());
+	//Here, we create a swapFileName as ID.swap using unique thread ID
 	fileSystem->Create(swapFileName, size);
+	//Then, we must open it up.
 	swapFile = fileSystem->Open(swapFileName);
+	//Go back up to where we left off...
 }
 
 void AddrSpace::DeleteSwapFile(){
