@@ -32,6 +32,9 @@ class AddrSpace {
     void RestoreState();		// info on a context switch 
 
   private:
+    OpenFile *exeFile;
+    OpenFile *swapFile;
+
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
@@ -39,6 +42,7 @@ class AddrSpace {
 	unsigned int startPage;		//Page number that the program starts at
 								//in physical memory
 	bool space;		//Boolean to remember if there was enough space or not
+  char swapFileName[12];
 };
 
 #endif // ADDRSPACE_H

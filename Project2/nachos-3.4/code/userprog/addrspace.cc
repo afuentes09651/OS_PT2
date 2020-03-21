@@ -57,6 +57,8 @@ SwapHeader (NoffHeader *noffH)
 //	"executable" is the file containing the object code to load into memory
 //----------------------------------------------------------------------
 
+
+
 AddrSpace::AddrSpace(OpenFile *executable)
 {
     NoffHeader noffH;
@@ -76,6 +78,30 @@ AddrSpace::AddrSpace(OpenFile *executable)
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
+
+
+
+	// Create swap file
+	sprintf(swapFileName, "%i.swap", currentThread->getID());
+	//Here, we create a swapFileName as ID.swap using unique thread ID
+	fileSystem->Create(swapFileName, size);
+
+	// //Then, we must open it up.
+	swapFile = fileSystem->Open(swapFileName);
+
+	int exeSize = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
+	//This int represents the size of the buffer.
+	char *exeBuff = new char[exeSize];
+	executable->ReadAt(exeBuff, exeSize, sizeof(noffH));
+	swapFile->WriteAt(exeBuff, exeSize, 0);
+
+	// Close to not consume mem
+	delete exeBuff;
+	delete swapFile;
+
+
+
+
 	//Change this to reference the bitmap for free pages
 	//instead of total amount of pages
 	//This requires a global bitmap instance
@@ -94,15 +120,6 @@ AddrSpace::AddrSpace(OpenFile *executable)
 			counter = 0;
 	}
 	
-	DEBUG('a', "%i contiguous blocks found for %i pages\n", counter, numPages);
-
-	//If no memory available, terminate
-	if(counter < numPages)
-	{
-		printf("Not enough contiguous memory for new process; terminating!.\n");
-		currentThread->killNewChild = true;
-		return;
-	}
 
 	//If we get past the if statement, then there was sufficient space
 	space = true;
@@ -116,8 +133,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-		//pageTable[i].physicalPage = i;	//Replace with pageTable[i].physicalPage = i + startPage;
-		pageTable[i].physicalPage = i + startPage;
+		//pageTable[i].physicalPage = i + startPage;
 		pageTable[i].valid = FALSE; //edit AF, setting valid bits to false per request of instructions
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
@@ -125,26 +141,19 @@ AddrSpace::AddrSpace(OpenFile *executable)
 						// a separate page, we could set its 
 						// pages to be read-only
 
-		//Take the global bitmap and set the relevant chunks
-		//to indicate that the memory is in use
+
 		memMap->Mark(i + startPage);
     }
 	
 	memMap->Print();	// Useful!
     
-// zero out the entire address space, to zero the unitialized data segment 
-// and the stack segment
-//    bzero(machine->mainMemory, size); rm for Solaris
-	//Edited version adds startPage * PageSize to the address. Hopefully this is proper.
-	//Either way, it appears to zero out only however much memory is needed,
-	//so zeroing out all memory doesn't seem to be an issue. - Devin
-	
+
 	pAddr = startPage * PageSize;
 	
     memset(machine->mainMemory + pAddr, 0, size);
 
-// then, copy in the code and data segments into memory
-//Change these too since they assume virtual page = physical page
+	// then, copy in the code and data segments into memory
+	//Change these too since they assume virtual page = physical page
 	  //Fix this by adding startPage times page size as an offset
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
@@ -180,6 +189,7 @@ AddrSpace::~AddrSpace()
 
 		delete pageTable;
 
+		fileSystem->Remove(swapFileName); // delete swap file
 		memMap->Print();
 	}
 }
