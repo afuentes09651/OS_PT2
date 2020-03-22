@@ -95,7 +95,6 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	executable->ReadAt(exeBuff, exeSize, sizeof(noffH));
 	swapFile->WriteAt(exeBuff, exeSize, 0);
 
-	// I think we should delete the swap at the end of the constructor instead of right here. -AH
 	// Close to not consume mem
 	delete exeBuff;
 	delete swapFile;
@@ -159,8 +158,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	
 	//Here might be where we copy code from the executable to the swap instead of memory.
 	//That would probably be why we commented out the executable->ReadAt stuff.
-	//Even then, I'm still not 100% sure how we would change these lines to do that.
-	//Maybe it's as simple as changing the first parameter in each to the swapfile instead of main memory. -AH
+	//Even then, I'm still not 100% sure how we would change these lines to do that. -AH
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
 			noffH.code.virtualAddr + (startPage * PageSize), noffH.code.size);
