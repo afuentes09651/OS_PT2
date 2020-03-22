@@ -80,7 +80,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 
 
-
+	// Creating a swap file when initializing address space done below
 	// Create swap file
 	sprintf(swapFileName, "%i.swap", currentThread->getID());
 	//Here, we create a swapFileName as ID.swap using unique thread ID
@@ -95,6 +95,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	executable->ReadAt(exeBuff, exeSize, sizeof(noffH));
 	swapFile->WriteAt(exeBuff, exeSize, 0);
 
+	// I think we should delete the swap at the end of the constructor instead of right here. -AH
 	// Close to not consume mem
 	delete exeBuff;
 	delete swapFile;
@@ -155,19 +156,26 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	// then, copy in the code and data segments into memory
 	//Change these too since they assume virtual page = physical page
 	  //Fix this by adding startPage times page size as an offset
+	
+	//Here might be where we copy code from the executable to the swap instead of memory.
+	//That would probably be why we commented out the executable->ReadAt stuff.
+	//Even then, I'm still not 100% sure how we would change these lines to do that.
+	//Maybe it's as simple as changing the first parameter in each to the swapfile instead of main memory. -AH
     if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
 			noffH.code.virtualAddr + (startPage * PageSize), noffH.code.size);
+		//This line:
         //executable->ReadAt(&(machine->mainMemory[noffH.code.virtualAddr + pAddr]),
 			//noffH.code.size, noffH.code.inFileAddr);
     }
     if (noffH.initData.size > 0) {
         DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
 			noffH.initData.virtualAddr + (startPage * PageSize), noffH.initData.size);
-        //executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr + pAddr]),
+        //And this line:
+		//executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr + pAddr]),
 			//noffH.initData.size, noffH.initData.inFileAddr);
     }
-
+//The rest of the code in here looks like it would work. -AH
 }
 
 //----------------------------------------------------------------------
