@@ -25,7 +25,7 @@ StartProcess(char *filename)
 {
     OpenFile *executable = fileSystem->Open(filename);
 
-    printf("Attempting to open file %s", filename);
+    printf("Attempting to open file %s\n", filename);
 	
     AddrSpace *space;
 
@@ -51,6 +51,8 @@ StartProcess(char *filename)
     space->InitRegisters();		// set the initial register values
     space->RestoreState();		// load page table register
 
+    space->swap = new Swap(1, 1);
+    
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;
 					// the address space exits
