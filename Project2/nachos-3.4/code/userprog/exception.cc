@@ -329,26 +329,31 @@ ExceptionHandler(ExceptionType which)
 	case PageFaultException: //begin code AF, code for the page fault exception
 	{
 		int vpNum = machine->ReadRegister(BadVAddrReg) / PageSize; //getting index of the virtual 
-		printf("Page Fault: Process %d requested virtual page %d", currentThread->getID(), vpNum); //lets print that exception like the rest of them
+		printf("Page Fault: Process %d requested virtual page %d\n", currentThread->getID(), vpNum); //lets print that exception like the rest of them
 
 		int index = memMap->Find(); //finding some free bits for us. it will be -1 if there arent any available
+
+
+		//currentThread->space->LoadPage(machine->ReadRegister(BadVAddrReg), index);
 
 		if(index < 0){//if we never found a free page
 			printf("ERROR: No free page!\n");
 			Cleanup();
 		}
 		else{ //if we found a page 
-			printf("Assigning physical page %d", index); //guessing we are going to need this output
-			machine->pageTable[vpNum].physicalPage = index; //we were tasked to update currentThread’s pageTable[].physicalPage
-			machine->pageTable[vpNum].valid = TRUE; //tasked to also make the valid bit true
 
-			printf("\nOpening file %s\n",currentThread->getFN());
-			OpenFile *executable = fileSystem->Open(currentThread->getFN()); //open the file
+			currentThread->space->LoadPage(machine->ReadRegister(BadVAddrReg), index); // index is physical page location
+
+			// printf("Assigning physical page %d", index); //guessing we are going to need this output
+			// machine->pageTable[vpNum].physicalPage = index; //we were tasked to update currentThread’s pageTable[].physicalPage
+			// machine->pageTable[vpNum].valid = TRUE; //tasked to also make the valid bit true
+
+			// printf("\nOpening file %s\n",currentThread->getFN());
+			// OpenFile *executable = fileSystem->Open(currentThread->getFN()); //open the file
 			
-			//load single page into main memory using ReadAt() 
-			executable->ReadAt(&(machine->mainMemory[index * PageSize]),
-			PageSize, sizeof(NoffHeader) + vpNum * PageSize);
-			delete executable; //close the file
+			// //load single page into main memory using ReadAt() 
+			// executable->ReadAt(&(machine->mainMemory[index * PageSize]), PageSize, sizeof(NoffHeader) + vpNum * PageSize);
+			// delete executable; //close the file
 		}	
 		break;
 	} //end code AF

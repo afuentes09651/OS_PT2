@@ -59,6 +59,7 @@ SwapHeader (NoffHeader *noffH)
 
 AddrSpace::AddrSpace(OpenFile *executable)
 {
+	exeFile = executable;
     NoffHeader noffH;
     unsigned int i, size, pAddr, counter;
 	space = false;
@@ -69,40 +70,53 @@ AddrSpace::AddrSpace(OpenFile *executable)
     	SwapHeader(&noffH);
     ASSERT(noffH.noffMagic == NOFFMAGIC);
 
-// how big is address space?
-    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size 
-			+ UserStackSize;	// we need to increase the size
-						// to leave room for the stack
+    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + UserStackSize;	// we need to increase the size
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
-	//Change this to reference the bitmap for free pages
-	//instead of total amount of pages
-	//This requires a global bitmap instance
+
+	// // Create swap file
+	sprintf(swapFileName, "%i.swap", currentThread->getID());
+	//Here, we create a swapFileName as ID.swap using unique thread ID
+	fileSystem->Create(swapFileName, size);
+
+	// //Then, we must open it up.
+	swapFile = fileSystem->Open(swapFileName);
+
+	int exeSize = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
+	//This int represents the size of the buffer.
+	char *exeBuff = new char[exeSize];
+	executable->ReadAt(exeBuff, exeSize, sizeof(noffH));
+	swapFile->WriteAt(exeBuff, exeSize, 0);
 	
-	counter = 0;
-	for(i = 0; i < NumPhysPages && counter < numPages; i++)
-	{
-		if(!memMap->Test(i))
-		{
-			if(counter == 0)
-				startPage = i;	//startPage is a class data member
-								//Should it be public or private? (Currently private)
-			counter++;
-		}
-		else
-			counter = 0;
-	}
+	// Close to not consume mem
+	delete exeBuff;
+	//delete swapFile; // may want to move this until after swapin/out are called
+
+
+
+	// counter = 0;
+	// for(i = 0; i < NumPhysPages && counter < numPages; i++)
+	// {
+	// 	if(!memMap->Test(i))
+	// 	{
+	// 		if(counter == 0)
+	// 			startPage = i;	//startPage is a class data member
+	// 							//Should it be public or private? (Currently private)
+	// 		counter++;
+	// 	}
+	// 	else
+	// 		counter = 0;
+	// }
 	
-	DEBUG('a', "%i contiguous blocks found for %i pages\n", counter, numPages);
 
 	//If no memory available, terminate
-	if(counter < numPages)
-	{
-		printf("Not enough contiguous memory for new process; terminating!.\n");
-		currentThread->killNewChild = true;
-		return;
-	}
+	// if(counter < numPages)
+	// {
+	// 	printf("Not enough contiguous memory for new process; terminating!.\n");
+	// 	currentThread->killNewChild = true;
+	// 	return;
+	// }
 
 	//If we get past the if statement, then there was sufficient space
 	space = true;
@@ -110,14 +124,13 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	//This safeguards against the loop terminating due to reaching
 	//the end of the bitmap but no contiguous space being available
 
-    DEBUG('a', "Initializing address space, numPages=%d, size=%d\n", 
-					numPages, size);
+
 // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
 		//pageTable[i].physicalPage = i;	//Replace with pageTable[i].physicalPage = i + startPage;
-		pageTable[i].physicalPage = i + startPage;
+		//pageTable[i].physicalPage = i + startPage;
 		pageTable[i].valid = FALSE; //edit AF, setting valid bits to false per request of instructions
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
@@ -132,35 +145,113 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	
 	memMap->Print();	// Useful!
     
-// zero out the entire address space, to zero the unitialized data segment 
-// and the stack segment
-//    bzero(machine->mainMemory, size); rm for Solaris
-	//Edited version adds startPage * PageSize to the address. Hopefully this is proper.
-	//Either way, it appears to zero out only however much memory is needed,
-	//so zeroing out all memory doesn't seem to be an issue. - Devin
-	
-	pAddr = startPage * PageSize;
-	
-    memset(machine->mainMemory + pAddr, 0, size);
 
-// then, copy in the code and data segments into memory
-//Change these too since they assume virtual page = physical page
-	  //Fix this by adding startPage times page size as an offset
-    if (noffH.code.size > 0) {
-        DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
-			noffH.code.virtualAddr + (startPage * PageSize), noffH.code.size);
-        //executable->ReadAt(&(machine->mainMemory[noffH.code.virtualAddr + pAddr]),
-			//noffH.code.size, noffH.code.inFileAddr);
-    }
-    if (noffH.initData.size > 0) {
-        DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
-			noffH.initData.virtualAddr + (startPage * PageSize), noffH.initData.size);
-        //executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr + pAddr]),
-			//noffH.initData.size, noffH.initData.inFileAddr);
-    }
+	// pAddr = startPage * PageSize;
+	
+    // memset(machine->mainMemory + pAddr, 0, size);
+
+
+	//   //Fix this by adding startPage times page size as an offset
+    // if (noffH.code.size > 0) {
+    //     DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
+	// 		noffH.code.virtualAddr + (startPage * PageSize), noffH.code.size);
+			
+    //     //executable->ReadAt(&(machine->mainMemory[noffH.code.virtualAddr + pAddr]),
+	// 		//noffH.code.size, noffH.code.inFileAddr);
+    // }
+    // if (noffH.initData.size > 0) {
+    //     DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
+	// 		noffH.initData.virtualAddr + (startPage * PageSize), noffH.initData.size);
+    //     //executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr + pAddr]),
+	// 		//noffH.initData.size, noffH.initData.inFileAddr);
+    // }
 
 }
 
+
+void AddrSpace::LoadPage(int badVAddrReg, int pPage){
+	//printf("load here\n");
+
+	// if(pPage < 0){
+	// 	printf("ERROR: No free page!\n");
+
+	// 	for(int i = 0; i < NumPhysPages; i++){
+	// 		if(pageTable[i].valid)
+	// 			printf("ayooo %i", i);
+	// 	}
+	// 	Cleanup();
+	// 	return;
+	// 	// No free page, so we need to pick a page, and swap it out, then swap ours in.
+	// 	//SwapOut(); // swap out should really only be called here when there are no pages available
+	// }
+
+
+
+	int vPage = badVAddrReg / PageSize;
+
+	printf("Assigning physical page\n"); //guessing we are going to need this output
+	pageTable[vPage].physicalPage = pPage;
+	pageTable[vPage].valid = true;
+	//printf("Swapping in page\n");
+	//SwapIn(vPage, pPage);
+	
+
+	OpenFile *executable = fileSystem->Open(currentThread->getFN()); //open the file
+	executable->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize, sizeof(NoffHeader) + vPage * PageSize);
+	delete executable;
+	//setValidity(vPage, true);
+	//setDirty(vPage, false);
+	//load executable from swapfile
+	//swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize, sizeof(NoffHeader) + vPage * PageSize);
+	//delete swapFile;
+}
+
+bool AddrSpace::SwapIn(int vPage, int pPage){
+	int charsRead = 0;
+	
+	char *pos = machine->mainMemory + (pPage * PageSize); // use physical page * size to get location to read
+
+	charsRead = swapFile->ReadAt(pos, PageSize,  vPage * PageSize);
+	bool assert = (charsRead == PageSize); // ensure read the correct size of data
+	printf("pos: %i, charsRead: %i\n", pos, charsRead);
+	if(assert){
+		printf("making sure this hits\n");
+		// in physical memory, not modified by by machine
+		setValidity(vPage, true);
+		setDirty(vPage, false);
+	}
+
+	return assert;
+}
+
+bool AddrSpace::SwapOut(int pPage){
+
+	int page = getPageNum(pPage);
+
+	if(page == -1){
+		printf("ERROR: Could not swap page!\n");
+		return false;
+	}
+
+	if(pageTable[page].dirty){
+		int charsWrote;
+		char *pos = machine->mainMemory + pPage * PageSize;
+
+		swapFile->WriteAt(pos, PageSize, page * PageSize);
+		if(charsWrote != PageSize){
+			//some shit fucked up
+			printf("some shit fucked up\n");
+			return false;
+		}
+	} 
+
+	setValidity(page, false);
+	setDirty(page, false);
+	pageTable[page].physicalPage = -1;
+
+
+	return true;
+}
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace
 // 	Dealloate an address space.  Nothing for now!
@@ -171,6 +262,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 AddrSpace::~AddrSpace()
 {
+	
 	// Only clear the memory if it was set to begin with
 	// which in turn only happens after space is set to true
 	if(space)
@@ -181,7 +273,10 @@ AddrSpace::~AddrSpace()
 			}
 
 		delete [] pageTable;
-
+		// delete swapFile;
+		// if(!fileSystem->Remove(swapFileName))
+		// 	printf("yo dog\n");
+		//delete swapFile;
 		memMap->Print();
 	}
 }

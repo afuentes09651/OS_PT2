@@ -31,7 +31,31 @@ class AddrSpace {
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch 
 
+    void LoadPage(int badVAddrReg, int pPage);
+    bool SwapOut(int pPage);
+    bool SwapIn(int vPage, int pPage); 
+    //AR
+    // valid - Set true if page is in physical memory.
+    void setValidity(int vPage, bool valid){
+      pageTable[vPage].valid = valid;
+    }
+    //dirty - Set if page is modified by machine.
+    void setDirty(int vPage, bool dirty){
+      pageTable[vPage].dirty = dirty;
+    }    
+
+    int getPageNum(int pPage){
+      for(int i = 0; i < numPages; i++){
+        if(pageTable[i].physicalPage == pPage && pageTable[i].valid)
+          return i;
+      }
+      return -1;
+    }
+    //end AR
   private:
+    OpenFile *exeFile;
+    OpenFile *swapFile;
+
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
@@ -39,6 +63,7 @@ class AddrSpace {
 	unsigned int startPage;		//Page number that the program starts at
 								//in physical memory
 	bool space;		//Boolean to remember if there was enough space or not
+  char swapFileName[12];
 };
 
 #endif // ADDRSPACE_H
