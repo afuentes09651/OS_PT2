@@ -53,13 +53,13 @@ class AddrSpace {
       return -1;
     }
 
-    Swap *swap;
-        unsigned int numPages;		// Number of pages in the virtual 
+    //Swap *swap;
+    unsigned int numPages;		// Number of pages in the virtual 
     //end AR
   private:
     
     OpenFile *exeFile;
-    //OpenFile *swapFile;
+    OpenFile *swapFile;
 
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!
@@ -68,7 +68,7 @@ class AddrSpace {
 	unsigned int startPage;		//Page number that the program starts at
 								//in physical memory
 	bool space;		//Boolean to remember if there was enough space or not
-  //char swapFileName[12];
+  char swapFileName[12];
 };
 
 #endif // ADDRSPACE_H

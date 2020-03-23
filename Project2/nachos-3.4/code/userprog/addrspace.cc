@@ -74,26 +74,24 @@ AddrSpace::AddrSpace(OpenFile *executable)
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
-	// printf("doing file shit\n");
-	// // Create swap file
-	// sprintf(swapFileName, "%i.swap", currentThread->getID());
-	// //Here, we create a swapFileName as ID.swap using unique thread ID
-	// fileSystem->Create(swapFileName, size);
 
-	// // //Then, we must open it up.
-	// swapFile = fileSystem->Open(swapFileName);
+	// Create swap file
+	sprintf(swapFileName, "%i.swap", currentThread->getID());
+	//Here, we create a swapFileName as ID.swap using unique thread ID
+	fileSystem->Create(swapFileName, size);
 
-	// int exeSize = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
-	// //This int represents the size of the buffer.
-	// char *exeBuff = new char[exeSize];
-	// executable->ReadAt(exeBuff, exeSize, sizeof(noffH));
-	// swapFile->WriteAt(exeBuff, exeSize, 0);
+	// //Then, we must open it up.
+	swapFile = fileSystem->Open(swapFileName);
+
+	int exeSize = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
+	//This int represents the size of the buffer.
+	char *exeBuff = new char[exeSize];
+	executable->ReadAt(exeBuff, exeSize, sizeof(noffH));
+	swapFile->WriteAt(exeBuff, exeSize, 0);
 
 	// Close to not consume mem
-	//delete exeBuff;
-	//delete swapFile; // may want to move this until after swapin/out are called
-
-
+	delete exeBuff;
+	delete swapFile;
 
 
 	//If we get past the if statement, then there was sufficient space
@@ -125,15 +123,18 @@ void AddrSpace::HandlePageFault(int addr){
 	TranslationEntry entry = pageTable[vPage];
 
 	if(!entry.valid){
-		printf("yay");
-
+		
+		LoadPage(vPage);
+	}else{
+		// Pick page to swap out
+		// store using IPT
+		// call SwapOut
 	}
 }
-void AddrSpace::LoadPage(int badVAddrReg){
-	//printf("load here\n");
+void AddrSpace::LoadPage(int vPage){
 
 	int pPage = memMap->Find();
-	printf("pPage: %i\n", pPage);
+	printf("pPage: %i, vPage: %i\n", pPage, vPage);
 	if(pPage < 0){
 		printf("ERROR: No free page!\n");
 
@@ -148,69 +149,52 @@ void AddrSpace::LoadPage(int badVAddrReg){
 	}
 
 
-
-	int vPage = badVAddrReg / PageSize;
-	printf("vPage: %i\n", vPage);
 	printf("Assigning physical page\n"); //guessing we are going to need this output
 	pageTable[vPage].physicalPage = pPage;
-	// pageTable[vPage].valid = true;
-	//printf("Swapping in page\n");
+
+	printf("Swapping in page\n");
 	//SwapIn(vPage, pPage);
 	setValidity(vPage, true);
 	setDirty(vPage, false);
-	//OpenFile *test = fileSystem->Open(swapFileName); //open the file
-
+	
+	swapFile = fileSystem->Open(swapFileName);
 	// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
-	//swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize));
-
+	swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize));
+	delete swapFile;
 }
 
-// bool AddrSpace::SwapIn(int vPage, int pPage){
-// 	int charsRead = 0;
-	
-// 	char *pos = machine->mainMemory + (pPage * PageSize); // use physical page * size to get location to read
 
-// 	charsRead = swapFile->ReadAt(pos, PageSize,  vPage * PageSize);
-// 	bool assert = (charsRead == PageSize); // ensure read the correct size of data
-// 	printf("pos: %i, charsRead: %i\n", pos, charsRead);
-// 	if(assert){
-// 		printf("making sure this hits\n");
-// 		// in physical memory, not modified by by machine
-// 		setValidity(vPage, true);
-// 		setDirty(vPage, false);
-// 	}
+bool AddrSpace::SwapOut(int pPage){
 
-// 	return assert;
-// }
+	int page = getPageNum(pPage);
 
-// bool AddrSpace::SwapOut(int pPage){
+	if(page == -1){
+		printf("ERROR: Could not swap page!\n");
+		return false;
+	}
 
-// 	int page = getPageNum(pPage);
+	if(pageTable[page].dirty){
+		int charsWrote;
+		char *pos = machine->mainMemory + pPage * PageSize;
 
-// 	if(page == -1){
-// 		printf("ERROR: Could not swap page!\n");
-// 		return false;
-// 	}
+		swapFile = fileSystem->Open(swapFileName);
+		swapFile->WriteAt(pos, PageSize, page * PageSize);
+		delete swapFile;
 
-// 	if(pageTable[page].dirty){
-// 		int charsWrote;
-// 		char *pos = machine->mainMemory + pPage * PageSize;
+		if(charsWrote != PageSize){
+			//some shit fucked up
+			printf("some shit fucked up\n");
+			return false;
+		}
+	} 
 
-// 		swapFile->WriteAt(pos, PageSize, page * PageSize);
-// 		if(charsWrote != PageSize){
-// 			//some shit fucked up
-// 			printf("some shit fucked up\n");
-// 			return false;
-// 		}
-// 	} 
-
-// 	setValidity(page, false);
-// 	setDirty(page, false);
-// 	pageTable[page].physicalPage = -1;
+	setValidity(page, false);
+	setDirty(page, false);
+	pageTable[page].physicalPage = -1;
 
 
-// 	return true;
-// }
+	return true;
+}
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace
 // 	Dealloate an address space.  Nothing for now!
@@ -232,10 +216,10 @@ AddrSpace::~AddrSpace()
 			}
 
 		delete [] pageTable;
-		// delete swapFile;
-		// if(!fileSystem->Remove(swapFileName))
-		// 	printf("yo dog\n");
-		//delete swapFile;
+
+		if(!fileSystem->Remove(swapFileName))
+			printf("failed to delete swap file\n");
+		
 		memMap->Print();
 	}
 }

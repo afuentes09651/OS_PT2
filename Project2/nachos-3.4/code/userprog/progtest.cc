@@ -51,7 +51,7 @@ StartProcess(char *filename)
     space->InitRegisters();		// set the initial register values
     space->RestoreState();		// load page table register
 
-    space->swap = new Swap(1, 1);
+    //space->swap = new Swap(1, 1);
     
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;
