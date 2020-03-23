@@ -32,6 +32,7 @@ extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 extern int threadChoice;
 extern int memChoice;
+extern int repChoice;
 extern bool pageFlag;
 
 extern BitMap *memMap;				//Bitmap to keep track of memory use

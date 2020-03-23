@@ -7,6 +7,7 @@
 
 #include "copyright.h"
 #include "system.h"
+#include "machine.h"
 
 // This defines *all* of the global data structures used by Nachos.
 // These are all initialized and de-allocated by this file.
@@ -20,6 +21,7 @@ Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 int threadChoice;
 int memChoice;
+int repChoice;
 bool pageFlag;
 
 BitMap * memMap;
@@ -128,6 +130,15 @@ Initialize(int argc, char **argv)
 			memChoice = atoi(*(argv+1));
 	    argCount = 2;
 	}
+	//edit by AH for Proj 4
+	else if (!strcmp(*argv, "-V")) {
+	    if(*(argv+1) == NULL)
+			repChoice = 0;
+	    else
+			repChoice = atoi(*(argv+1));
+	    argCount = 2;
+	}
+	//end edit
 #ifdef USER_PROGRAM
 	if (!strcmp(*argv, "-s"))
 	    debugUserProg = TRUE;

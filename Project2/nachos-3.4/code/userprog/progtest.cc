@@ -33,14 +33,22 @@ StartProcess(char *filename)
 	printf("Unable to open file %s\n", filename);
 	return;
     }
-	
-	printf("Memory allocation method chosen: ");
-	if(memChoice == 1)
-		printf("First-fit.\n");
-	else if (memChoice == 2)
-		printf("Best-fit.\n");
-	else
-		printf("Worst-fit.\n");
+	//Changes by Alec Hebert
+    printf("Page replacement algorithm chosen: ");
+    if(repChoice == 0)
+        printf("Demand Paging.\n");
+    else if(repChoice == 1)
+        printf("First in, First out.\n");
+    else
+        printf("Random Replacement.\n");
+    //End changes by Alec Hebert
+	//printf("Memory allocation method chosen: ");
+	//if(memChoice == 1)
+	//	printf("First-fit.\n");
+	//else if (memChoice == 2)
+	//	printf("Best-fit.\n");
+	//else
+	//	printf("Worst-fit.\n");
 	
     space = new AddrSpace(executable);    
     currentThread->space = space;

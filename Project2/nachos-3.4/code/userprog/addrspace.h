@@ -16,6 +16,7 @@
 #include "copyright.h"
 #include "filesys.h"
 #include "swap.h"
+#include "machine.h"
 #define UserStackSize		1024 	// increase this as necessary!
 
 class AddrSpace {
@@ -52,7 +53,8 @@ class AddrSpace {
       }
       return -1;
     }
-
+    //AH - Define IPT
+    Thread *ipt[numPhysPages];
     //Swap *swap;
     unsigned int numPages;		// Number of pages in the virtual 
     //end AR
