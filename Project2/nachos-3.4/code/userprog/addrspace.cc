@@ -125,9 +125,22 @@ void AddrSpace::HandlePageFault(int addr){
 		
 		LoadPage(vPage);
 	}else{
+		// Something needs to be swapped out according to selected algo
 		// Pick page to swap out
-		// store using IPT
+		// store using IPT (the way to do this is the same for all options)
 		// call SwapOut
+		if(repChoice==1){
+			//FIFO
+
+		}
+		else if (repChoice==2){
+			//Random
+			int randint = (int)(Random() % NumPhysPages);
+		}
+		else{
+			//Demand
+			printf("You chose Demand Paging, and memory is full. Due to your choice, nothing will be swapped and this process will terminate.\n");
+		}
 	}
 }
 void AddrSpace::LoadPage(int vPage){

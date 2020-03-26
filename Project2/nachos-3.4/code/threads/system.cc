@@ -21,11 +21,12 @@ Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 int threadChoice;
 int memChoice;
-int repChoice;
+int repChoice = 0;
 bool pageFlag;
 
 BitMap * memMap;
 Thread ** ipt = new Thread*[NumPhysPages];
+List fifo; //for fifo in task 4 proj 4
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;

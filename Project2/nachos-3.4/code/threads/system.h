@@ -36,7 +36,7 @@ extern int repChoice;
 extern bool pageFlag;
 extern Thread **ipt;				//AH - Define IPT
 extern BitMap *memMap;				//Bitmap to keep track of memory use
-
+extern List fifo;
 #ifdef USER_PROGRAM
 #include "machine.h"
 extern Machine* machine;	// user program memory and registers
