@@ -53,8 +53,7 @@ class AddrSpace {
       }
       return -1;
     }
-    //AH - Define IPT
-    Thread *ipt[numPhysPages];
+   
     //Swap *swap;
     unsigned int numPages;		// Number of pages in the virtual 
     //end AR
@@ -68,7 +67,7 @@ class AddrSpace {
 
 					// address space
 	unsigned int startPage;		//Page number that the program starts at
-								//in physical memory
+  							//in physical memory
 	bool space;		//Boolean to remember if there was enough space or not
   char swapFileName[12];
 };

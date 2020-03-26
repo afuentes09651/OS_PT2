@@ -74,7 +74,6 @@ AddrSpace::AddrSpace(OpenFile *executable)
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
-
 	// Create swap file
 	sprintf(swapFileName, "%i.swap", currentThread->getID());
 	//Here, we create a swapFileName as ID.swap using unique thread ID
@@ -118,7 +117,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 void AddrSpace::HandlePageFault(int addr){
 	int vPage = addr / PageSize;
-
+	
 
 	TranslationEntry entry = pageTable[vPage];
 

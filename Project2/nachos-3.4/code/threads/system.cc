@@ -25,6 +25,7 @@ int repChoice;
 bool pageFlag;
 
 BitMap * memMap;
+Thread ** ipt = new Thread*[NumPhysPages];
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
