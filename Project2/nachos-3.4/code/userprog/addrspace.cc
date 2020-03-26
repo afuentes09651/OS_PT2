@@ -136,18 +136,31 @@ void AddrSpace::HandlePageFault(int addr){
 			//Look at the List, find first page
 			//find PHYSICAL PAGE NUMBER used by any thread to be replaced
 			//get that page number to swap
+			int swapPage = (*fifo.Remove());
 			//find thread in ipt using that page
+			Thread * t = ipt[swapPage];
 			//is it dirty?
+			if(pageTable[swapPage].dirty){
 				//if so, open swapfile
+				swapFile = fileSystem->Open(swapFileName);
 				//write from physical page to swap at vpage location
+				//***code here - idk what it means by vpage location*** - AH
 				//set valid bit to false
+				setValidity(swapPage,false);
 				//close swap
 				//delete pointer
+				delete swapFile;
+			}
 			//open thread's swapfile
+			//***code***
 			//copy content into reserved phys page
+			//***code***
 			//update ipt[ppn] to current thread
+			//***code***
 				//if fifo, add to list
+				//***code***
 			//swap that boi out
+			//***code***
 		}
 		else if (repChoice==2){
 			//Random
@@ -155,16 +168,27 @@ void AddrSpace::HandlePageFault(int addr){
 			int randint = (int)(Random() % NumPhysPages);
 			//get that boi to swap
 			//find thread in ipt using that page
+			Thread * t = ipt[randint];
 			//is it dirty?
+			if(pageTable[randint].dirty){
 				//if so, open swapfile
+				swapFile = fileSystem->Open(swapFileName);
 				//write from physical page to swap at vpage location
+				//***code here***
 				//set valid bit to false
+				setValidity(randint,false);
 				//close swap
 				//delete pointer
+				delete swapFile;
+			}
 			//open thread's swapfile
+			//***code***
 			//copy content into reserved phys page
+			//***code***
 			//update ipt[ppn] to current thread
+			//***code***
 			//swap that boi out
+			//***code***
 		}
 		else{
 			//Demand
@@ -198,6 +222,9 @@ void AddrSpace::LoadPage(int vPage){
 	//SwapIn(vPage, pPage);
 	setValidity(vPage, true);
 	setDirty(vPage, false);
+
+	fifo.Append(pPage);//AH - put page in fifo list after its in memory
+	ipt[pPage] = currentThread;//AH - put currentThread into ipt slot corresponding to physical page number.
 	
 	swapFile = fileSystem->Open(swapFileName);
 	// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
