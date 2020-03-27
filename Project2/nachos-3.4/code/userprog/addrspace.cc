@@ -59,8 +59,7 @@ SwapHeader (NoffHeader *noffH)
 
 AddrSpace::AddrSpace(OpenFile *executable)
 {
-	printf("HEREEE\n");
-	printf("test\n", );
+
 
 	exeFile = executable;
     NoffHeader noffH;
@@ -120,6 +119,8 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 void AddrSpace::HandlePageFault(int addr){
 	int vPage = addr / PageSize;
+	printf("HEREEE\n");
+	printf("test\n");
 
 
 	TranslationEntry entry = pageTable[vPage];
