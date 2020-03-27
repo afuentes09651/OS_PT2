@@ -59,13 +59,14 @@ SwapHeader (NoffHeader *noffH)
 
 AddrSpace::AddrSpace(OpenFile *executable)
 {
+	printf("HEREEE\n");
 	exeFile = executable;
     NoffHeader noffH;
     unsigned int i, size, pAddr, counter;
 	space = false;
 
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
-    if ((noffH.noffMagic != NOFFMAGIC) && 
+    if ((noffH.noffMagic != NOFFMAGIC) &&
 		(WordToHost(noffH.noffMagic) == NOFFMAGIC))
     	SwapHeader(&noffH);
     ASSERT(noffH.noffMagic == NOFFMAGIC);
@@ -100,7 +101,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	//the end of the bitmap but no contiguous space being available
 
 
-// first, set up the translation 
+// first, set up the translation
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
