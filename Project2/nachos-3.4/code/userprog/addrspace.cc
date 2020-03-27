@@ -60,6 +60,8 @@ SwapHeader (NoffHeader *noffH)
 AddrSpace::AddrSpace(OpenFile *executable)
 {
 	printf("HEREEE\n");
+	printf("test\n", );
+
 	exeFile = executable;
     NoffHeader noffH;
     unsigned int i, size, pAddr, counter;
