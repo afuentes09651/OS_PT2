@@ -1,9 +1,9 @@
-// addrspace.cc 
+// addrspace.cc
 //	Routines to manage address spaces (executing user programs).
 //
 //	In order to run a user program, you must:
 //
-//	1. link with the -N -T 0 option 
+//	1. link with the -N -T 0 option
 //	2. run coff2noff to convert the object file to Nachos format
 //		(Nachos object code format is essentially just a simpler
 //		version of the UNIX executable object code format)
@@ -12,7 +12,7 @@
 //		don't need to do this last step)
 //
 // Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
+// All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
 
 #include "copyright.h"
@@ -22,12 +22,12 @@
 
 //----------------------------------------------------------------------
 // SwapHeader
-// 	Do little endian to big endian conversion on the bytes in the 
+// 	Do little endian to big endian conversion on the bytes in the
 //	object file header, in case the file was generated on a little
 //	endian machine, and we're now running on a big endian machine.
 //----------------------------------------------------------------------
 
-static void 
+static void
 SwapHeader (NoffHeader *noffH)
 {
 	noffH->noffMagic = WordToHost(noffH->noffMagic);
@@ -50,7 +50,7 @@ SwapHeader (NoffHeader *noffH)
 //
 //	Assumes that the object code file is in NOFF format.
 //
-//	First, set up the translation from program memory to physical 
+//	First, set up the translation from program memory to physical
 //	memory.  For now, this is really simple (1:1), since we are
 //	only uniprogramming, and we have a single unsegmented page table
 //
@@ -109,21 +109,21 @@ AddrSpace::AddrSpace(OpenFile *executable)
 		pageTable[i].valid = FALSE; //edit AF, setting valid bits to false per request of instructions
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
-		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
+		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
     }
-	
+
 	memMap->Print();	// Useful!
-    
+
 }
 
 void AddrSpace::HandlePageFault(int addr){
 	int vPage = addr / PageSize;
-	
+
 
 	TranslationEntry entry = pageTable[vPage];
 
 	if(!entry.valid){
-		
+
 		LoadPage(vPage);
 	}
 	//Start changes Alec Hebert
@@ -223,7 +223,7 @@ void AddrSpace::LoadPage(int vPage){
 
 	fifo.Append(pPage);//AH - put page in fifo list after its in memory
 	ipt[pPage] = currentThread;//AH - put currentThread into ipt slot corresponding to physical page number.
-	
+
 	swapFile = fileSystem->Open(swapFileName);
 	// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
 	swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize));
@@ -253,7 +253,7 @@ bool AddrSpace::SwapOut(int pPage){
 			printf("some shit fucked up\n");
 			return false;
 		}
-	} 
+	}
 
 	setValidity(page, false);
 	setDirty(page, false);
@@ -272,7 +272,7 @@ bool AddrSpace::SwapOut(int pPage){
 
 AddrSpace::~AddrSpace()
 {
-	
+
 	// Only clear the memory if it was set to begin with
 	// which in turn only happens after space is set to true
 	if(space)
@@ -286,7 +286,7 @@ AddrSpace::~AddrSpace()
 
 		if(!fileSystem->Remove(swapFileName))
 			printf("failed to delete swap file\n");
-		
+
 		memMap->Print();
 	}
 }
@@ -310,7 +310,7 @@ AddrSpace::InitRegisters()
 	machine->WriteRegister(i, 0);
 
     // Initial program counter -- must be location of "Start"
-    machine->WriteRegister(PCReg, 0);	
+    machine->WriteRegister(PCReg, 0);
 
     // Need to also tell MIPS where next instruction is, because
     // of branch delay possibility
@@ -331,7 +331,7 @@ AddrSpace::InitRegisters()
 //	For now, nothing!
 //----------------------------------------------------------------------
 
-void AddrSpace::SaveState() 
+void AddrSpace::SaveState()
 {}
 
 //----------------------------------------------------------------------
@@ -342,7 +342,7 @@ void AddrSpace::SaveState()
 //      For now, tell the machine where to find the page table.
 //----------------------------------------------------------------------
 
-void AddrSpace::RestoreState() 
+void AddrSpace::RestoreState()
 {
     machine->pageTable = pageTable;
     machine->pageTableSize = numPages;
