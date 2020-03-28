@@ -152,7 +152,7 @@ void AddrSpace::HandlePageFault(int addr){
 				delete swapFile;
 			}
 			//open thread's swapfile
-			//***code - not sure how to get swapfile of a specific thread***
+			swapFile = fileSystem->Open("%i.swap",t->getID());//not sure how to get swapfile of a specific thread***
 			//copy content into reserved phys page
 			//***code - swap logic***
 			//update ipt[ppn] to current thread
@@ -181,7 +181,7 @@ void AddrSpace::HandlePageFault(int addr){
 				delete swapFile;
 			}
 			//open thread's swapfile
-			//***code - same deal as fifo***
+			swapFile = fileSystem->Open("%i.swap",t->getID());
 			//copy content into reserved phys page
 			//***code - swap logic***
 			//update ipt[ppn] to current thread
