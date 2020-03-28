@@ -145,21 +145,19 @@ void AddrSpace::HandlePageFault(int addr){
 				//write from physical page to swap at vpage location
 				swapFileName = ("%i.swap", t->getID());
 				SwapOut(swapPage.physicalPage);//write content of this thread's physical page to thread's vpage location
-				//how the hell do i assign the page to the thread
+				ipt[swapPage.physicalPage] = t;//idfk how to do this
 				//close swap
 				//delete pointer
 				//set valid bit to false
-				setValidity(swapPage,false);
 			}
 			//open current thread's swapfile
 			swapFileName = ("%i.swap",currentThread->getID());
 			//copy content into reserved phys page
-			SwapOut(swapPage.physicalPage);//???
-			LoadPage(swapPage.virtualPage);//???
+			LoadPage(swapPage.physicalPage);//???
 			//update ipt[ppn] to current thread
 			ipt[swapPage.physicalPage] = currentThread;
 			//if fifo, add to list
-			fifo.Append(swapPage);
+			fifo.Append(ListElement(swapPage,0));//idek if i appended the right shit honestly
 		}
 		else if (repChoice==2){
 			//Random
@@ -173,17 +171,17 @@ void AddrSpace::HandlePageFault(int addr){
 			if(pageTable[randint].dirty){
 				//if so, open swapfile
 				//write from physical page to swap at vpage location
+				swapFileName = ("%i.swap",t->getID());
 				SwapOut(randPage.physicalPage);
-				LoadPage(randPage.virtualPage);
+				ipt[randPage.physicalPage] = t;
 				//close swap
 				//delete pointer
 				//set valid bit to false
-				setValidity(randint,false);
 			}
 			//open current thread's swapfile
 			swapFile = fileSystem->Open("%i.swap",t->getID());
 			//copy content into reserved phys page
-			//***code - swap logic***
+			LoadPage(randPage.physicalPage);//???
 			//update ipt[ppn] to current thread
 			ipt[randint] = currentThread;
 		}
@@ -224,8 +222,8 @@ void AddrSpace::LoadPage(int vPage){
 	swapFile = fileSystem->Open(swapFileName);
 	// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
 	swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize));
-	
-	fifo.Append(ListElement(pageTable[pPage],0));//AH - put page in fifo list after its in memory
+	if(repChoice==1)
+		fifo.Append(ListElement(pageTable[pPage],0));//AH - put page in fifo list after its in memory
 	
 	delete swapFile;
 }
