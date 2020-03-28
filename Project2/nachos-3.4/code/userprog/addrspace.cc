@@ -104,7 +104,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-		pageTable[i].physicalPage = i;
+		//pageTable[i].physicalPage = i;
 		pageTable[i].valid = FALSE; //edit AF, setting valid bits to false per request of instructions
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
@@ -142,19 +142,20 @@ void AddrSpace::HandlePageFault(int addr){
 			//is it dirty?
 			if(swapPage.dirty){
 				//if so, open swapfile
-				swapFile = fileSystem->Open(swapFileName);
 				//write from physical page to swap at vpage location
-				//***code here - idk what it means by vpage location*** - AH
-				//set valid bit to false
-				setValidity(swapPage,false);
+				swapFileName = ("%i.swap", t->getID());
+				SwapOut(swapPage.physicalPage);//write content of this thread's physical page to thread's vpage location
+				//how the hell do i assign the page to the thread
 				//close swap
 				//delete pointer
-				delete swapFile;
+				//set valid bit to false
+				setValidity(swapPage,false);
 			}
-			//open thread's swapfile
-			swapFile = fileSystem->Open("%i.swap",t->getID());//not sure how to get swapfile of a specific thread***
+			//open current thread's swapfile
+			swapFileName = ("%i.swap",currentThread->getID());
 			//copy content into reserved phys page
-			//***code - swap logic***
+			SwapOut(swapPage.physicalPage);//???
+			LoadPage(swapPage.virtualPage);//???
 			//update ipt[ppn] to current thread
 			ipt[swapPage.physicalPage] = currentThread;
 			//if fifo, add to list
@@ -171,16 +172,15 @@ void AddrSpace::HandlePageFault(int addr){
 			//is it dirty?
 			if(pageTable[randint].dirty){
 				//if so, open swapfile
-				swapFile = fileSystem->Open(swapFileName);
 				//write from physical page to swap at vpage location
-				//***code here - same deal as fifo***
-				//set valid bit to false
-				setValidity(randint,false);
+				SwapOut(randPage.physicalPage);
+				LoadPage(randPage.virtualPage);
 				//close swap
 				//delete pointer
-				delete swapFile;
+				//set valid bit to false
+				setValidity(randint,false);
 			}
-			//open thread's swapfile
+			//open current thread's swapfile
 			swapFile = fileSystem->Open("%i.swap",t->getID());
 			//copy content into reserved phys page
 			//***code - swap logic***
@@ -214,25 +214,26 @@ void AddrSpace::LoadPage(int vPage){
 
 	printf("Assigning physical page\n"); //guessing we are going to need this output
 	pageTable[vPage].physicalPage = pPage;
+	ipt[pPage] = currentThread;//AH - put currentThread into ipt slot corresponding to physical page number.
 
 	printf("Swapping in page\n");
 	//SwapIn(vPage, pPage);
 	setValidity(vPage, true);
 	setDirty(vPage, false);
-
-	fifo.Append(pPage);//AH - put page in fifo list after its in memory
-	ipt[pPage] = currentThread;//AH - put currentThread into ipt slot corresponding to physical page number.
 	
 	swapFile = fileSystem->Open(swapFileName);
 	// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
 	swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize));
+	
+	fifo.Append(ListElement(pageTable[pPage],0));//AH - put page in fifo list after its in memory
+	
 	delete swapFile;
 }
 
 
 bool AddrSpace::SwapOut(int pPage){
 
-	int page = getPageNum(pPage);
+	int page = getPageNum(pPage);//Does the page exist?
 
 	if(page == -1){
 		printf("ERROR: Could not swap page!\n");
