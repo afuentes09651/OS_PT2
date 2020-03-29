@@ -117,7 +117,8 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 void AddrSpace::HandlePageFault(int addr){
 	int vPage = addr / PageSize;
-	
+	if(extraInput)
+		printf("PAGE FAULT: Process %i requests virtual page %i.\n",currentThread->getID(),vPage);
 
 	TranslationEntry entry = pageTable[vPage];
 
@@ -213,8 +214,8 @@ void AddrSpace::LoadPage(int vPage){
 		//SwapOut(); // swap out should really only be called here when there are no pages available
 	}
 
-
-	printf("Assigning physical page\n"); //guessing we are going to need this output
+	if(extraInput)
+		printf("Assigning physical page %i\n",pPage); //guessing we are going to need this output
 	pageTable[vPage].physicalPage = pPage;
 	ipt[pPage] = currentThread;//AH - put currentThread into ipt slot corresponding to physical page number.
 
@@ -244,6 +245,9 @@ bool AddrSpace::SwapOut(int pPage){
 	}
 
 	if(pageTable[page].dirty){
+		if(extraInput){
+			printf("Swap out physical page %i from process %i.\n",page,ipt[page]->getID());
+		}
 		int charsWrote;
 		char *pos = machine->mainMemory + pPage * PageSize;
 
@@ -261,7 +265,8 @@ bool AddrSpace::SwapOut(int pPage){
 	setValidity(page, false);
 	setDirty(page, false);
 	pageTable[page].physicalPage = -1;
-
+	if(extraInput)
+		printf("Virtual page %i removed.",page);
 
 	return true;
 }
