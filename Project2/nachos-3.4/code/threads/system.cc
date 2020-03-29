@@ -22,6 +22,7 @@ Timer *timer;				// the hardware timer device,
 int threadChoice;
 int memChoice;
 int repChoice = 0;
+bool extraInput;
 bool pageFlag;
 
 BitMap * memMap;
@@ -135,10 +136,13 @@ Initialize(int argc, char **argv)
 	//edit by AH for Proj 4
 	else if (!strcmp(*argv, "-V")) {
 	    if(*(argv+1) == NULL)
-			repChoice = 0;
+			repChoice = -1;
 	    else
 			repChoice = atoi(*(argv+1));
 	    argCount = 2;
+	}
+	else if (!strcmp(*argv, "-E")) {
+	    extraInput = true;
 	}
 	//end edit
 #ifdef USER_PROGRAM

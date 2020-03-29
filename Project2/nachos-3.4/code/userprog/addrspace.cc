@@ -159,8 +159,8 @@ void AddrSpace::HandlePageFault(int addr){
 			//update ipt[ppn] to current thread
 			ipt[swapPage.physicalPage] = currentThread;
 			//if fifo, add to list
-			void * swapPtr = &swapPage;
-			fifo.Append(swapPtr,0);//idek if i appended the right shit honestly
+			swapPagePtr = &swapPage;
+			fifo.Append(swapPagePtr,0);//idek if i appended the right shit honestly
 		}
 		else if (repChoice==2){
 			//Random

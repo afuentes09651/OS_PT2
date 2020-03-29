@@ -37,6 +37,8 @@ StartProcess(char *filename)
     printf("Page replacement algorithm chosen: ");
     if(repChoice == 0)
         printf("Demand Paging.\n");
+    else if(repChoice == -1)
+        printf("Demand Paging by default.\n");
     else if(repChoice == 1)
         printf("First in, First out.\n");
     else
