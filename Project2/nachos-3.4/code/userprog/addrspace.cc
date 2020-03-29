@@ -160,8 +160,8 @@ void AddrSpace::HandlePageFault(int addr){
 			//update ipt[ppn] to current thread
 			ipt[swapPage.physicalPage] = currentThread;
 			//if fifo, add to list
-			swapPagePtr = &swapPage;
-			fifo.Append(swapPagePtr,0);//idek if i appended the right shit honestly
+			void * swapPtr = &swapPage;
+			fifo.Append(swapPtr);//idek if i appended the right shit honestly
 		}
 		else if (repChoice==2){
 			//Random
@@ -229,7 +229,7 @@ void AddrSpace::LoadPage(int vPage){
 	swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize));
 	if(repChoice==1){
 		void * pPagePtr = &pageTable[pPage];
-		fifo.Append(pPagePtr,0);//AH - put page in fifo list after its in memory
+		fifo.Append(pPagePtr);//AH - put page in fifo list after its in memory
 	}
 	delete swapFile;
 }
