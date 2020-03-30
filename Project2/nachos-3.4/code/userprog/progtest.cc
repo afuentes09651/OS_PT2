@@ -25,7 +25,7 @@ StartProcess(char *filename)
 {
     OpenFile *executable = fileSystem->Open(filename);
 
-    printf("Attempting to open file %s\n", filename);
+    printf("\nAttempting to open file %s\n", filename);
 	
     AddrSpace *space;
 
@@ -34,6 +34,10 @@ StartProcess(char *filename)
 	return;
     }
 	//Changes by Alec Hebert
+    if(extraInput)
+        printf("\nExtra Input enabled.\n");
+    printf("Number of Physical Pages: %i\n",NumPhysPages);
+    printf("Page Size: %i bytes.\n", PageSize);
     printf("Page replacement algorithm chosen: ");
     if(repChoice == 0)
         printf("Demand Paging.\n");
@@ -44,13 +48,13 @@ StartProcess(char *filename)
     else
         printf("Random Replacement.\n");
     //End changes by Alec Hebert
-	//printf("Memory allocation method chosen: ");
-	//if(memChoice == 1)
-	//	printf("First-fit.\n");
-	//else if (memChoice == 2)
-	//	printf("Best-fit.\n");
-	//else
-	//	printf("Worst-fit.\n");
+	printf("Memory allocation method chosen: ");
+	if(memChoice == 1)
+		printf("First-fit.\n\n");
+	else if (memChoice == 2)
+		printf("Best-fit.\n\n");
+	else
+		printf("Worst-fit.\n\n");
 	
     space = new AddrSpace(executable);    
     currentThread->space = space;

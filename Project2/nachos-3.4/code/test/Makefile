@@ -35,7 +35,7 @@ CPP = gcc -E
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt shell matmult sort loop whee derp demand joinsort
+all: halt shell matmult sort loop whee derp demand joinsort execs
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.c > strt.s
@@ -95,3 +95,8 @@ joinsort.o: joinsort.c
 joinsort: joinsort.o start.o
 	$(LD) $(LDFLAGS) start.o joinsort.o -o joinsort.coff
 	../bin/coff2noff joinsort.coff joinsort
+execs.o: execs.c
+	$(CC) $(CFLAGS) -c execs.c
+execs: execs.o start.o
+	$(LD) $(LDFLAGS) start.o execs.o -o execs.coff
+	../bin/coff2noff execs.coff execs

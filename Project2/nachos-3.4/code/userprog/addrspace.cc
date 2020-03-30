@@ -118,7 +118,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 void AddrSpace::HandlePageFault(int addr){
 	int vPage = addr / PageSize;
 	if(extraInput)
-		printf("PAGE FAULT: Process %i requests virtual page %i.\n",currentThread->getID(),vPage);
+		printf("\nPAGE FAULT: Process %i requests virtual page %i.\n",currentThread->getID(),vPage);
 
 	TranslationEntry entry = pageTable[vPage];
 
@@ -137,18 +137,17 @@ void AddrSpace::HandlePageFault(int addr){
 			//Look at the List, find first page
 			//find PHYSICAL PAGE NUMBER used by any thread to be replaced
 			//get that page number to swap
-			void * swapPagePtr = fifo.Remove(); //dereference since Remove() returns a pointer
-			TranslationEntry swapPage = *(TranslationEntry *)swapPagePtr;
+			void * swapPagePtr = fifo.Remove(); 
+			int swapPage = *(int *)swapPagePtr;
 			//find thread in ipt using that page
-			Thread * t = ipt[swapPage.physicalPage];
-			setDirty(swapPage.virtualPage, true);
+			Thread * t = ipt[swapPage];
 			//is it dirty?
-			if(swapPage.dirty){
+			if(pageTable[swapPage].dirty){
 				//if so, open swapfile
 				//write from physical page to swap at vpage location
 				sprintf(swapFileName, "%i.swap", t->getID());
-				SwapOut(swapPage.physicalPage);//write content of this thread's physical page to thread's vpage location
-				ipt[swapPage.physicalPage] = t;//idfk how to do this
+				SwapOut(swapPage);//write content of this thread's physical page to thread's vpage location
+				ipt[swapPage] = t;//idfk how to do this
 				//close swap
 				//delete pointer
 				//set valid bit to false
@@ -156,9 +155,9 @@ void AddrSpace::HandlePageFault(int addr){
 			//open current thread's swapfile
 			sprintf(swapFileName, "%i.swap", currentThread->getID());
 			//copy content into reserved phys page
-			LoadPage(swapPage.physicalPage);//???
+			LoadPage(swapPage);//???
 			//update ipt[ppn] to current thread
-			ipt[swapPage.physicalPage] = currentThread;
+			ipt[swapPage] = currentThread;
 			//if fifo, add to list
 			void * swapPtr = &swapPage;
 			fifo.Append(swapPtr);//idek if i appended the right shit honestly
@@ -171,7 +170,6 @@ void AddrSpace::HandlePageFault(int addr){
 			//get that boi to swap
 			//find thread in ipt using that page
 			Thread * t = ipt[randPage.physicalPage];
-			setDirty(randPage.virtualPage, true);
 			//is it dirty?
 			if(randPage.dirty){
 				//if so, open swapfile
@@ -228,7 +226,7 @@ void AddrSpace::LoadPage(int vPage){
 	// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
 	swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize));
 	if(repChoice==1){
-		void * pPagePtr = &pageTable[pPage];
+		void * pPagePtr = &pPage;
 		fifo.Append(pPagePtr);//AH - put page in fifo list after its in memory
 	}
 	delete swapFile;
