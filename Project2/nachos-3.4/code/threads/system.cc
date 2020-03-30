@@ -22,7 +22,11 @@ Timer *timer;				// the hardware timer device,
 int threadChoice;
 int memChoice;
 int repChoice = 0;
+<<<<<<< HEAD
 bool isTwoLevel = false;
+=======
+bool extraInput;
+>>>>>>> swapfile3
 bool pageFlag;
 
 BitMap * memMap;
@@ -136,11 +140,12 @@ Initialize(int argc, char **argv)
 	//edit by AH for Proj 4
 	else if (!strcmp(*argv, "-V")) {
 	    if(*(argv+1) == NULL)
-			repChoice = 0;
+			repChoice = -1;
 	    else
 			repChoice = atoi(*(argv+1));
 	    argCount = 2;
 	}
+<<<<<<< HEAD
 	//end edit by AH
 
   //edit by Joseph Kokenge for Proj 4
@@ -150,6 +155,12 @@ Initialize(int argc, char **argv)
   }
   //end edit
 
+=======
+	else if (!strcmp(*argv, "-E")) {
+	    extraInput = true;
+	}
+	//end edit
+>>>>>>> swapfile3
 #ifdef USER_PROGRAM
 	if (!strcmp(*argv, "-s"))
 	    debugUserProg = TRUE;

@@ -58,31 +58,31 @@ SwapHeader (NoffHeader *noffH)
 //	"executable" is the file containing the object code to load into memory
 //----------------------------------------------------------------------
 
-AddrSpace::AddrSpace(OpenFile *executable)
+AddrSpace::AddrSpace(OpenFile *executable, int threadid)
 {
 
-	
+
 
 	exeFile = executable;
-    NoffHeader noffH;
-    unsigned int i, size, pAddr, counter;
+	NoffHeader noffH;
+	unsigned int i, size, pAddr, counter;
 	space = false;
 
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
     if ((noffH.noffMagic != NOFFMAGIC) &&
 		(WordToHost(noffH.noffMagic) == NOFFMAGIC))
-    	SwapHeader(&noffH);
-    ASSERT(noffH.noffMagic == NOFFMAGIC);
+		SwapHeader(&noffH);
+	ASSERT(noffH.noffMagic == NOFFMAGIC);
 
-    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + UserStackSize;	// we need to increase the size
-    numPages = divRoundUp(size, PageSize);
-    size = numPages * PageSize;
+	size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + UserStackSize; // we need to increase the size
+	numPages = divRoundUp(size, PageSize);
+	size = numPages * PageSize;
 
 	// Create swap file
-	sprintf(swapFileName, "%i.swap", currentThread->getID());
+	sprintf(swapFileName, "%i.swap", threadid);
 	//Here, we create a swapFileName as ID.swap using unique thread ID
 	fileSystem->Create(swapFileName, size);
-
+	printf("\nSWAPFILE CREATION: Swapfile %s has been created.\n",swapFileName);
 	// //Then, we must open it up.
 	swapFile = fileSystem->Open(swapFileName);
 
@@ -96,26 +96,25 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	delete exeBuff;
 	delete swapFile;
 
-
 	//If we get past the if statement, then there was sufficient space
 	space = true;
 
 	//This safeguards against the loop terminating due to reaching
 	//the end of the bitmap but no contiguous space being available
-	
+
 	//begin code by joseph kokenge
 	if (isTwoLevel) {
 		printf("Initializing Two level Table\n");
 
-		
+
 	    outerPageTable = new TranslationEntry*[outerTableSize];
-	
+
 		for (i = 0; i < outerTableSize; i++) {
 			outerPageTable[i] = NULL;
-			
-			
+
+
 	    }
-	
+
 
 		//end code by joseph kokenge
 	} else {
@@ -123,15 +122,15 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	    pageTable = new TranslationEntry[numPages]; // first, set up the translation
 	    for (i = 0; i < numPages; i++) {
 			pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-			pageTable[i].physicalPage = i;
+			//pageTable[i].physicalPage = i;
 			pageTable[i].valid = FALSE; //edit AF, setting valid bits to false per request of instructions
 			pageTable[i].use = FALSE;
 			pageTable[i].dirty = FALSE;
 			pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
-			
+
 	    }
 		//print memMap of singleLevel
-	
+
 		printf("PRINTING MEM MAP\n");
 		memMap->Print();	// Useful!
 	}
@@ -139,27 +138,29 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 }
 
+
+
+
+
+
 void AddrSpace::HandlePageFault(int addr){
-	
-	
-	
-	
+
 	if (isTwoLevel) {
 		printf("address: %d",addr);
 
 		int outerIndex = addr/innerTableSize;
 
 		int innerIndex = addr%innerTableSize;
-		
+
 		printf("yo we in page fault4\n");
 		printf("OUTER INDEX: %d\n",outerIndex);
 		printf("inner INDEX: %d\n",innerIndex);
 		int vPage = innerTableSize*outerIndex+innerIndex;
 
-		
+
 		if (currentThread->space->outerPageTable[outerIndex] == NULL) {
 			currentThread->space->outerPageTable[outerIndex] = new TranslationEntry[innerTableSize];
-			
+
 		    for (int i = 0; i < innerTableSize; i++) {
 				currentThread->space->outerPageTable[outerIndex][i].virtualPage = innerTableSize*outerIndex+i;	// for now, virtual page # = phys page #
 				currentThread->space->outerPageTable[outerIndex][i].valid = FALSE; //edit AF, setting valid bits to false per request of instructions
@@ -170,173 +171,110 @@ void AddrSpace::HandlePageFault(int addr){
 		    }
 
 		}
-		
-		
 
 		TranslationEntry entry = outerPageTable[outerIndex][innerIndex];
-		
+
 		if(!entry.valid){
 			LoadPage(vPage);
 		}
 
 		printf("yo we in page fault5\n");
 
-	
+
 	} else {
-		int vPage = addr / PageSize;
+		//Begin changes Alec Hebert and Armando Fuentes
+			int vPage = addr / PageSize;
+			int pPage = memMap -> Find();
+			if (extraInput)
+				printf("\nPAGE FAULT: Process %i requests virtual page %i.\n", currentThread -> getID(), vPage);
 
-	
-		TranslationEntry entry = pageTable[vPage];
-
-		if(!entry.valid){
-
-			LoadPage(vPage);
-		}
-		//Start changes Alec Hebert
-		else{
-			// Something needs to be swapped out according to selected algo
-			// Pick page to swap out
-			// store using IPT (the way to do this is the same for all options)
-			// call SwapOut
-			if(repChoice==1){
-				//FIFO
-				//Look at the List, find first page
-				//find PHYSICAL PAGE NUMBER used by any thread to be replaced
-				//get that page number to swap
-	//			TranslationEntry swapPage = (*fifo.Remove()); //dereference since Remove() returns a pointer
-				//find thread in ipt using that page
-	//			Thread * t = ipt[swapPage.physicalPage];
-				//is it dirty?
-	//			if(swapPage.dirty){
-					//if so, open swapfile
-	//				swapFile = fileSystem->Open(swapFileName);
-					//write from physical page to swap at vpage location
-					//***code here - idk what it means by vpage location*** - AH
-					//set valid bit to false
-	//				setValidity(swapPage,false);
-					//close swap
-					//delete pointer
-	//				delete swapFile;
-	//			}
-				//open thread's swapfile
-				//***code - not sure how to get swapfile of a specific thread***
-				//copy content into reserved phys page
-				//***code - swap logic***
-				//update ipt[ppn] to current thread
-	//			ipt[swapPage.physicalPage] = currentThread;
-				//if fifo, add to list
-	//			fifo.Append(swapPage);
-			}
-			else if (repChoice==2){
-				//Random
-				//find physical page number generated by randint
-				int randint = (int)(Random() % NumPhysPages);
-				TranslationEntry randPage = pageTable[randint];
-				//get that boi to swap
-				//find thread in ipt using that page
-				Thread * t = ipt[randPage.physicalPage];
-				//is it dirty?
-				if(pageTable[randint].dirty){
-					//if so, open swapfile
-					swapFile = fileSystem->Open(swapFileName);
-					//write from physical page to swap at vpage location
-					//***code here - same deal as fifo***
-					//set valid bit to false
-					setValidity(randint,false);
-					//close swap
-					//delete pointer
-					delete swapFile;
+			// Something needs to be swapped out
+			if (pPage == -1)
+			{
+				// Pick a page to swap out
+				if (repChoice == 1)
+				{ // FIFO
+					pPage = (int)fifo.Remove();
 				}
-				//open thread's swapfile
-				//***code - same deal as fifo***
-				//copy content into reserved phys page
-				//***code - swap logic***
-				//update ipt[ppn] to current thread
-				ipt[randint] = currentThread;
+				else if (repChoice == 2)
+				{ // RANDOM
+					pPage = (int)(Random() % NumPhysPages);
+				}
+				else
+				{ // Demand
+					printf("You chose Demand Paging, not enough pages are available. Due to your choice, nothing will be swapped and this process will terminate.\n");
+					Cleanup();
+				}
+				// Do the roar
+				printf("Swapping out thread %d page %d\n",ipt[pPage]->getID(),pPage);
+				ipt[pPage]->space->SwapOut(pPage);
 			}
-			else{
-				//Demand
-				printf("You chose Demand Paging, not enough pages are available. Due to your choice, nothing will be swapped and this process will terminate.\n");
+
+			// Swap in
+			LoadPage(vPage, pPage);
+			memMap->Print();
+			// Update queue if we fifo
+			if (repChoice == 1)
+			{
+				fifo.Append((void *)pPage);
 			}
-			//End changes Alec Hebert
+			//End changes Alec Hebert and Armando Fuentes
 		}
 	}
 }
-void AddrSpace::LoadPage(int vPage){
-	printf("loadinge\n");
-	int pPage = memMap->Find();
+
+
+
+void AddrSpace::LoadPage(int vPage, int pPage)
+{
+
 	printf("pPage: %i, vPage: %i\n", pPage, vPage);
-	
-	
-	if (isTwoLevel) {
-		
-		pageTable[vPage].physicalPage = pPage;
 
-		printf("Swapping in page\n");
-		//SwapIn(vPage, pPage);
-		setValidity(vPage, true);
-		setDirty(vPage, false);
+	if (extraInput)
+		printf("Swapping in Physical Page %d and Virtual Page %d\n", pPage, vPage); //guessing we are going to need this output
+	pageTable[vPage].physicalPage = pPage;
+	ipt[pPage] = currentThread; //AH - put currentThread into ipt slot corresponding to physical page number.
 
+	setValidity(vPage, true);
+	setDirty(vPage, false);
+	printf("Attempting to open swapfile %s...\n",swapFileName);
+	swapFile = fileSystem->Open(swapFileName);
+	// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
+	swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize, (vPage * PageSize)); //the meat of loadPage
 
-		
-		
-	} else {
-
-
-
-		printf("Assigning physical page\n"); //guessing we are going to need this output
-		
-		
-		
-		pageTable[vPage].physicalPage = pPage;
-
-		printf("Swapping in page\n");
-		//SwapIn(vPage, pPage);
-		setValidity(vPage, true);
-		setDirty(vPage, false);
-
-	//	fifo.Append(pPage);//AH - put page in fifo list after its in memory
-		ipt[pPage] = currentThread;//AH - put currentThread into ipt slot corresponding to physical page number.
-
-		swapFile = fileSystem->Open(swapFileName);
-		// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
-		swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize));
-		delete swapFile;
-	
-	}
-	
+	delete swapFile;
+	printf("Deleted swapfile %s...\n",swapFileName);
 }
 
+bool AddrSpace::SwapOut(int pPage)
+{
+	printf("swap\n", );
+	int vPage = getPageNum(pPage); //Does the page exist?
 
-bool AddrSpace::SwapOut(int pPage){
-	printf("swap");
-
-	int page = getPageNum(pPage);
-
-	if(page == -1){
+	if (vPage == -1)
+	{
 		printf("ERROR: Could not swap page!\n");
 		return false;
 	}
 
-	if(pageTable[page].dirty){
-		int charsWrote;
+	if (pageTable[vPage].dirty)
+	{
+		if (extraInput)
+		{
+			printf("Swap out physical page %i from process %i.\n", vPage, ipt[vPage]->getID());
+		}
 		char *pos = machine->mainMemory + pPage * PageSize;
 
 		swapFile = fileSystem->Open(swapFileName);
-		swapFile->WriteAt(pos, PageSize, page * PageSize);
+		swapFile->WriteAt(pos, PageSize, vPage * PageSize);
 		delete swapFile;
-
-		if(charsWrote != PageSize){
-			//some shit fucked up
-			printf("some shit fucked up\n");
-			return false;
-		}
 	}
 
-	setValidity(page, false);
-	setDirty(page, false);
-	pageTable[page].physicalPage = -1;
-
+	setValidity(vPage, false);
+	setDirty(vPage, false);
+	pageTable[vPage].physicalPage = -1;
+	if (extraInput)
+		printf("Virtual page %i removed.\n", vPage);
 
 	return true;
 }
@@ -354,29 +292,34 @@ AddrSpace::~AddrSpace()
 	// Only clear the memory if it was set to begin with
 	// which in turn only happens after space is set to true
 	if(space) {
-		if (isTwoLevel) { 
-			//delete here 
+		if (isTwoLevel) {
+			//delete here
 			//FROM SHAH it involves deleting your pointers of pagetable and clearing the bitMap used by the process.
-			
-			
-			
+
+
+
 		}
-		else { 
+		else {
 			for(int i = 0; i < numPages; i++)	// We need an offset of startPage + numPages for clearing.
 				if(pageTable[i].valid){
 					memMap->Clear(pageTable[i].physicalPage);
+					ipt[pageTable[i].physicalPage] = NULL;
+
 				}
 
 			delete [] pageTable;
+			if(!fileSystem->Remove(swapFileName)){
+					printf("failed to delete swap file\n");
+
+			}
+			memMap->Print();
 
 
-			
+
 		}
-		if(!fileSystem->Remove(swapFileName))
-			printf("failed to delete swap file\n");
 
-		memMap->Print();
-		
+
+
 	}
 }
 
@@ -390,8 +333,7 @@ AddrSpace::~AddrSpace()
 //	when this thread is context switched out.
 //----------------------------------------------------------------------
 
-void
-AddrSpace::InitRegisters()
+void AddrSpace::InitRegisters()
 {
 
 
@@ -428,7 +370,8 @@ AddrSpace::InitRegisters()
 //----------------------------------------------------------------------
 
 void AddrSpace::SaveState()
-{}
+{
+}
 
 //----------------------------------------------------------------------
 // AddrSpace::RestoreState
@@ -440,12 +383,12 @@ void AddrSpace::SaveState()
 
 void AddrSpace::RestoreState()
 {
-	
+
 
 	if (isTwoLevel) {
 		machine->outerPageTable = outerPageTable;
 		machine->outerPageTableSize = outerTableSize;
-		
+
 	} else {
 		machine->pageTable = pageTable;
 		machine->pageTableSize = numPages;

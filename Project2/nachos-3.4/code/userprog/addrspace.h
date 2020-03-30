@@ -21,7 +21,7 @@
 
 class AddrSpace {
   public:
-    AddrSpace(OpenFile *executable);	// Create an address space,
+    AddrSpace(OpenFile *executable, int threadid);	// Create an address space,
 					// initializing it with the program
 					// stored in the file "executable"
     ~AddrSpace();			// De-allocate an address space
@@ -32,7 +32,7 @@ class AddrSpace {
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch 
 
-    void LoadPage(int badVAddrReg);
+    void LoadPage(int vPage, int pPage);
     void HandlePageFault(int addr);
     bool SwapOut(int pPage);
     bool SwapIn(int vPage, int pPage); 
