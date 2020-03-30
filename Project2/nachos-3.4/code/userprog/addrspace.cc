@@ -1,9 +1,9 @@
-// addrspace.cc 
+// addrspace.cc
 //	Routines to manage address spaces (executing user programs).
 //
 //	In order to run a user program, you must:
 //
-//	1. link with the -N -T 0 option 
+//	1. link with the -N -T 0 option
 //	2. run coff2noff to convert the object file to Nachos format
 //		(Nachos object code format is essentially just a simpler
 //		version of the UNIX executable object code format)
@@ -12,7 +12,7 @@
 //		don't need to do this last step)
 //
 // Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
+// All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
 
 #include "copyright.h"
@@ -22,13 +22,13 @@
 
 //----------------------------------------------------------------------
 // SwapHeader
-// 	Do little endian to big endian conversion on the bytes in the 
+// 	Do little endian to big endian conversion on the bytes in the
 //	object file header, in case the file was generated on a little
 //	endian machine, and we're now running on a big endian machine.
 //----------------------------------------------------------------------
 
-static void 
-SwapHeader (NoffHeader *noffH)
+static void
+SwapHeader(NoffHeader *noffH)
 {
 	noffH->noffMagic = WordToHost(noffH->noffMagic);
 	noffH->code.size = WordToHost(noffH->code.size);
@@ -50,7 +50,7 @@ SwapHeader (NoffHeader *noffH)
 //
 //	Assumes that the object code file is in NOFF format.
 //
-//	First, set up the translation from program memory to physical 
+//	First, set up the translation from program memory to physical
 //	memory.  For now, this is really simple (1:1), since we are
 //	only uniprogramming, and we have a single unsegmented page table
 //
@@ -60,19 +60,19 @@ SwapHeader (NoffHeader *noffH)
 AddrSpace::AddrSpace(OpenFile *executable)
 {
 	exeFile = executable;
-    NoffHeader noffH;
-    unsigned int i, size, pAddr, counter;
+	NoffHeader noffH;
+	unsigned int i, size, pAddr, counter;
 	space = false;
 
-    executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
-    if ((noffH.noffMagic != NOFFMAGIC) && 
+	executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
+	if ((noffH.noffMagic != NOFFMAGIC) &&
 		(WordToHost(noffH.noffMagic) == NOFFMAGIC))
-    	SwapHeader(&noffH);
-    ASSERT(noffH.noffMagic == NOFFMAGIC);
+		SwapHeader(&noffH);
+	ASSERT(noffH.noffMagic == NOFFMAGIC);
 
-    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + UserStackSize;	// we need to increase the size
-    numPages = divRoundUp(size, PageSize);
-    size = numPages * PageSize;
+	size = noffH.code.size + noffH.initData.size + noffH.uninitData.size + UserStackSize; // we need to increase the size
+	numPages = divRoundUp(size, PageSize);
+	size = numPages * PageSize;
 
 	// Create swap file
 	sprintf(swapFileName, "%i.swap", currentThread->getID());
@@ -92,132 +92,143 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	delete exeBuff;
 	delete swapFile;
 
-
 	//If we get past the if statement, then there was sufficient space
 	space = true;
 
 	//This safeguards against the loop terminating due to reaching
 	//the end of the bitmap but no contiguous space being available
 
-
-// first, set up the translation 
-    pageTable = new TranslationEntry[numPages];
-    for (i = 0; i < numPages; i++) {
-		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+	// first, set up the translation
+	pageTable = new TranslationEntry[numPages];
+	for (i = 0; i < numPages; i++)
+	{
+		pageTable[i].virtualPage = i; // for now, virtual page # = phys page #
 		//pageTable[i].physicalPage = i;
 		pageTable[i].valid = FALSE; //edit AF, setting valid bits to false per request of instructions
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
-		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
-    }
-	
-	memMap->Print();	// Useful!
-    
+		pageTable[i].readOnly = FALSE; // if the code segment was entirely on
+	}
+
+	memMap->Print(); // Useful!
 }
 
-void AddrSpace::HandlePageFault(int addr){
+void AddrSpace::HandlePageFault(int addr)
+{//Begin changes Alec Hebert and Armando Fuentes
 	int vPage = addr / PageSize;
-	int pPage = memMap->Find();
-	if(extraInput)
-		printf("\nPAGE FAULT: Process %i requests virtual page %i.\n",currentThread->getID(),vPage);
+	int pPage = memMap -> Find();
+	if (extraInput)
+		printf("\nPAGE FAULT: Process %i requests virtual page %i.\n", currentThread -> getID(), vPage);
 
-	TranslationEntry entry = pageTable[vPage];
-
-	if(!entry.valid){
-		
-		LoadPage(vPage, pPage);
-	}
-	//Start changes Alec Hebert
-	else{
-		// Something needs to be swapped out according to selected algo
-		// Pick page to swap out
-		// store using IPT (the way to do this is the same for all options)
-		// call SwapOut
-		if(repChoice==1){
-            //FIFO
-            //Look at the List, find first page
-            //find PHYSICAL PAGE NUMBER used by any thread to be replaced
-            //get that page number to swap
-            if(pPage == -1){
-                  pPage = (int)fifo.Remove(); // whatever yourr fifo queue thing is and however you get values off
-				  vPage = ipt[pPage]->space->getPageNum(pPage);//Does the page exist?
-                  ipt[pPage]->space->SwapOut(vPage,pPage);
-            }
-           	 LoadPage((int)pPage, (int)(BadVAddrReg/PageSize));
-            fifo.Append((void *)pPage);
-            //find thread in ipt using that page
-            }
-		else if (repChoice==2){
-			//Random
-			//find physical page number generated by randint
-			int randint = (int)(Random() % NumPhysPages);
-			TranslationEntry randPage = pageTable[randint];
-			//get that boi to swap
-			//find thread in ipt using that page
-			Thread * t = ipt[randPage.physicalPage];
-			//is it dirty?
-			if(randPage.dirty){
-				//if so, open swapfile
-				//write from physical page to swap at vpage location
-				sprintf(swapFileName, "%i.swap", t->getID());
-				SwapOut(vPage,randPage.physicalPage);
-				ipt[randPage.physicalPage] = t;
-				//close swap
-				//delete pointer
-				//set valid bit to false
-			}
-			//open current thread's swapfile
-			sprintf(swapFileName, "%i.swap", currentThread->getID());
-			//copy content into reserved phys page
-			LoadPage(vPage,randPage.physicalPage);//???
-			//update ipt[ppn] to current thread
-			ipt[randint] = currentThread;
+	// Something needs to be swapped out
+	if (pPage == -1)
+	{
+		// Pick a page to swap out
+		if (repChoice == 1)
+		{ // FIFO
+			pPage = (int)fifo.Remove();
 		}
-		else{
-			//Demand
+		else if (repChoice == 2)
+		{ // RANDOM
+			pPage = (int)(Random() % NumPhysPages);
+		}
+		else
+		{ // Demand
 			printf("You chose Demand Paging, not enough pages are available. Due to your choice, nothing will be swapped and this process will terminate.\n");
+			Cleanup();
 		}
-		//End changes Alec Hebert
-	} 
-}
-
-void AddrSpace::LoadPage(int vPage, int pPage){
-
-    printf("pPage: %i, vPage: %i\n", pPage, vPage);
-
-    if(extraInput)
-        printf("Swapping in Physical Page %d and Virtual Page %d\n", pPage, vPage); //guessing we are going to need this output
-    pageTable[vPage].physicalPage = pPage;
-    ipt[pPage] = currentThread;//AH - put currentThread into ipt slot corresponding to physical page number.
-
-
-    setValidity(vPage, true);
-    setDirty(vPage, false);
-    
-    swapFile = fileSystem->Open(swapFileName);
-    // DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
-    swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize)); //the meat of loadPage
-	
-	switch(repChoice){
-		case 1:{
-			fifo.Append((void *)pPage);//AH - put page in fifo list after its in memory
-			break;
-		} 
+		// Do the roar
+		ipt[pPage]->space->SwapOut(pPage);
 	}
-    delete swapFile;
+
+	// Swap in
+	LoadPage(pPage, vPage);
+
+	// Update queue if we fifo
+	if (repChoice == 1)
+	{
+		fifo.Append((void *)pPage);
+	}
+	else if (repChoice == 2)
+	{
+		//Random
+		//find physical page number generated by randint
+		int randint = (int)(Random() % NumPhysPages);
+		TranslationEntry randPage = pageTable[randint];
+		//get that boi to swap
+		//find thread in ipt using that page
+		Thread *t = ipt[randPage.physicalPage];
+		//is it dirty?
+		if (randPage.dirty)
+		{
+			//if so, open swapfile
+			//write from physical page to swap at vpage location
+			sprintf(swapFileName, "%i.swap", t->getID());
+			SwapOut(randPage.physicalPage);
+			ipt[randPage.physicalPage] = t;
+			//close swap
+			//delete pointer
+			//set valid bit to false
+		}
+		//open current thread's swapfile
+		sprintf(swapFileName, "%i.swap", currentThread->getID());
+		//copy content into reserved phys page
+		LoadPage(vPage, randPage.physicalPage); //???
+		//update ipt[ppn] to current thread
+		ipt[randint] = currentThread;
+	}
+	else
+	{
+		//Demand
+		printf("You chose Demand Paging, not enough pages are available. Due to your choice, nothing will be swapped and this process will terminate.\n");
+	}
+	//End changes Alec Hebert and Armando Fuentes
 }
 
+void AddrSpace::LoadPage(int vPage, int pPage)
+{
 
-bool AddrSpace::SwapOut(int pPage, int vPage){
+	printf("pPage: %i, vPage: %i\n", pPage, vPage);
 
-	if(vPage == -1){	
+	if (extraInput)
+		printf("Swapping in Physical Page %d and Virtual Page %d\n", pPage, vPage); //guessing we are going to need this output
+	pageTable[vPage].physicalPage = pPage;
+	ipt[pPage] = currentThread; //AH - put currentThread into ipt slot corresponding to physical page number.
+
+	setValidity(vPage, true);
+	setDirty(vPage, false);
+
+	swapFile = fileSystem->Open(swapFileName);
+	// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
+	swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize, (vPage * PageSize)); //the meat of loadPage
+
+	switch (repChoice)
+	{
+	case 1:
+	{
+		fifo.Append((void *)pPage); //AH - put page in fifo list after its in memory
+		break;
+	}
+	}
+	delete swapFile;
+}
+
+bool AddrSpace::SwapOut(int pPage)
+{
+
+	int vPage = ipt[pPage]->space->getPageNum(pPage); //Does the page exist?
+
+	if (vPage == -1)
+	{
 		printf("ERROR: Could not swap page!\n");
 		return false;
 	}
 
-	if(pageTable[vPage].dirty){
-		if(extraInput){
-			printf("Swap out physical page %i from process %i.\n",vPage,ipt[vPage]->getID());
+	if (pageTable[vPage].dirty)
+	{
+		if (extraInput)
+		{
+			printf("Swap out physical page %i from process %i.\n", vPage, ipt[vPage]->getID());
 		}
 		int charsWrote;
 		char *pos = machine->mainMemory + pPage * PageSize;
@@ -226,17 +237,18 @@ bool AddrSpace::SwapOut(int pPage, int vPage){
 		swapFile->WriteAt(pos, PageSize, vPage * PageSize);
 		delete swapFile;
 
-		if(charsWrote != PageSize){
+		if (charsWrote != PageSize)
+		{
 			printf("Unable to complete swap out process\n");
 			return false;
 		}
-	} 
+	}
 
 	setValidity(vPage, false);
 	setDirty(vPage, false);
 	pageTable[vPage].physicalPage = -1;
-	if(extraInput)
-		printf("Virtual page %i removed.",vPage);
+	if (extraInput)
+		printf("Virtual page %i removed.", vPage);
 
 	return true;
 }
@@ -250,21 +262,22 @@ bool AddrSpace::SwapOut(int pPage, int vPage){
 
 AddrSpace::~AddrSpace()
 {
-	
+
 	// Only clear the memory if it was set to begin with
 	// which in turn only happens after space is set to true
-	if(space)
+	if (space)
 	{
-		for(int i = 0; i < numPages; i++)	// We need an offset of startPage + numPages for clearing.
-			if(pageTable[i].valid){
+		for (int i = 0; i < numPages; i++) // We need an offset of startPage + numPages for clearing.
+			if (pageTable[i].valid)
+			{
 				memMap->Clear(pageTable[i].physicalPage);
 			}
 
-		delete [] pageTable;
+		delete[] pageTable;
 
-		if(!fileSystem->Remove(swapFileName))
+		if (!fileSystem->Remove(swapFileName))
 			printf("failed to delete swap file\n");
-		
+
 		memMap->Print();
 	}
 }
@@ -279,26 +292,25 @@ AddrSpace::~AddrSpace()
 //	when this thread is context switched out.
 //----------------------------------------------------------------------
 
-void
-AddrSpace::InitRegisters()
+void AddrSpace::InitRegisters()
 {
-    int i;
+	int i;
 
-    for (i = 0; i < NumTotalRegs; i++)
-	machine->WriteRegister(i, 0);
+	for (i = 0; i < NumTotalRegs; i++)
+		machine->WriteRegister(i, 0);
 
-    // Initial program counter -- must be location of "Start"
-    machine->WriteRegister(PCReg, 0);	
+	// Initial program counter -- must be location of "Start"
+	machine->WriteRegister(PCReg, 0);
 
-    // Need to also tell MIPS where next instruction is, because
-    // of branch delay possibility
-    machine->WriteRegister(NextPCReg, 4);
+	// Need to also tell MIPS where next instruction is, because
+	// of branch delay possibility
+	machine->WriteRegister(NextPCReg, 4);
 
-   // Set the stack register to the end of the address space, where we
-   // allocated the stack; but subtract off a bit, to make sure we don't
-   // accidentally reference off the end!
-    machine->WriteRegister(StackReg, numPages * PageSize - 16);
-    DEBUG('a', "Initializing stack register to %d\n", numPages * PageSize - 16);
+	// Set the stack register to the end of the address space, where we
+	// allocated the stack; but subtract off a bit, to make sure we don't
+	// accidentally reference off the end!
+	machine->WriteRegister(StackReg, numPages * PageSize - 16);
+	DEBUG('a', "Initializing stack register to %d\n", numPages * PageSize - 16);
 }
 
 //----------------------------------------------------------------------
@@ -309,8 +321,9 @@ AddrSpace::InitRegisters()
 //	For now, nothing!
 //----------------------------------------------------------------------
 
-void AddrSpace::SaveState() 
-{}
+void AddrSpace::SaveState()
+{
+}
 
 //----------------------------------------------------------------------
 // AddrSpace::RestoreState
@@ -320,8 +333,8 @@ void AddrSpace::SaveState()
 //      For now, tell the machine where to find the page table.
 //----------------------------------------------------------------------
 
-void AddrSpace::RestoreState() 
+void AddrSpace::RestoreState()
 {
-    machine->pageTable = pageTable;
-    machine->pageTableSize = numPages;
+	machine->pageTable = pageTable;
+	machine->pageTableSize = numPages;
 }
