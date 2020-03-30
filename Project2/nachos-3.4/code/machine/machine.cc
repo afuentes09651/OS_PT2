@@ -54,8 +54,9 @@ void CheckEndian()
 
 Machine::Machine(bool debug)
 {
-    int i;
+    printf("machine");
 
+    int i;
     for (i = 0; i < NumTotalRegs; i++)
         registers[i] = 0;
     mainMemory = new char[MemorySize];
@@ -82,6 +83,8 @@ Machine::Machine(bool debug)
 
 Machine::~Machine()
 {
+    printf("~machine");
+
     delete [] mainMemory;
     if (tlb != NULL)
         delete [] tlb;
@@ -100,6 +103,8 @@ Machine::~Machine()
 void
 Machine::RaiseException(ExceptionType which, int badVAddr)
 {
+    printf("machineExcept\n");
+
     DEBUG('m', "Exception: %s\n", exceptionNames[which]);
     
 //  ASSERT(interrupt->getStatus() == UserMode);
@@ -122,6 +127,8 @@ Machine::RaiseException(ExceptionType which, int badVAddr)
 
 void Machine::Debugger()
 {
+    printf("machinedebug");
+
     char *buf = new char[80];
     int num;
 
@@ -162,7 +169,8 @@ void Machine::Debugger()
 
 void
 Machine::DumpState()
-{
+{    printf("machine dump");
+
     int i;
     
     printf("Machine registers:\n");
@@ -201,12 +209,17 @@ Machine::DumpState()
 
 int Machine::ReadRegister(int num)
     {
+
 	ASSERT((num >= 0) && (num < NumTotalRegs));
+
+
 	return registers[num];
     }
 
 void Machine::WriteRegister(int num, int value)
     {
+       // printf("write");
+
 	ASSERT((num >= 0) && (num < NumTotalRegs));
 	// DEBUG('m', "WriteRegister %d, value %d\n", num, value);
 	registers[num] = value;

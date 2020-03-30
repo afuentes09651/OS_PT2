@@ -61,6 +61,14 @@ class AddrSpace {
     
     OpenFile *exeFile;
     OpenFile *swapFile;
+    
+    
+    TranslationEntry **outerPageTable;
+    
+    
+    int outerTableSize = 16;
+    int innerTableSize = 16;
+    int totalSize = 256;
 
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!

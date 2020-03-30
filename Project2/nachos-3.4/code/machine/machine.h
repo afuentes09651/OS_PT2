@@ -28,6 +28,9 @@
 
 // Definitions related to the size, and format of user memory
 
+
+  
+  
 #define PageSize 	SectorSize 	// set the page size equal to
 					// the disk sector size, for
 					// simplicity
@@ -181,12 +184,18 @@ class Machine {
 
     TranslationEntry *pageTable;
     unsigned int pageTableSize;
+    unsigned int outerPageTableSize;
+
+
+    TranslationEntry **outerPageTable;
 
   private:
     bool singleStep;		// drop back into the debugger after each
 				// simulated instruction
     int runUntilTime;		// drop back into the debugger when simulated
 				// time reaches this value
+    int outerTableSize = 16;
+    int innerTableSize = 16;
 };
 
 extern void ExceptionHandler(ExceptionType which);

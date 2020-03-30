@@ -33,6 +33,7 @@ extern Timer *timer;				// the hardware alarm clock
 extern int threadChoice;
 extern int memChoice;
 extern int repChoice;
+extern bool isTwoLevel;
 extern bool pageFlag;
 extern Thread **ipt;				//AH - Define IPT
 extern BitMap *memMap;				//Bitmap to keep track of memory use
