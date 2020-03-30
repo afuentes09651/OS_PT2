@@ -10,4 +10,5 @@ main()
     Exec("../test/demand");
     Exec("../test/demand");
     Exec("../test/demand");
+    Exit(0);
 }
