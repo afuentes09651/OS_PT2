@@ -78,7 +78,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	sprintf(swapFileName, "%i.swap", currentThread->getID());
 	//Here, we create a swapFileName as ID.swap using unique thread ID
 	fileSystem->Create(swapFileName, size);
-
+	printf("\nSWAPFILE CREATION: Swapfile %s has been created.\n",swapFileName);
 	// //Then, we must open it up.
 	swapFile = fileSystem->Open(swapFileName);
 
@@ -138,12 +138,13 @@ void AddrSpace::HandlePageFault(int addr)
 			Cleanup();
 		}
 		// Do the roar
+		printf("Swapping out thread %d page %d\n",ipt[pPage]->getID(),pPage);
 		ipt[pPage]->space->SwapOut(pPage);
 	}
 
 	// Swap in
 	LoadPage(vPage, pPage);
-
+	memMap->Print();
 	// Update queue if we fifo
 	if (repChoice == 1)
 	{
@@ -164,12 +165,13 @@ void AddrSpace::LoadPage(int vPage, int pPage)
 
 	setValidity(vPage, true);
 	setDirty(vPage, false);
-
+	printf("Attempting to open swapfile %s...\n",swapFileName);
 	swapFile = fileSystem->Open(swapFileName);
 	// DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
 	swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize, (vPage * PageSize)); //the meat of loadPage
 
 	delete swapFile;
+	printf("Deleted swapfile %s...\n",swapFileName);
 }
 
 bool AddrSpace::SwapOut(int pPage)
@@ -200,7 +202,7 @@ bool AddrSpace::SwapOut(int pPage)
 	setDirty(vPage, false);
 	pageTable[vPage].physicalPage = -1;
 	if (extraInput)
-		printf("Virtual page %i removed.", vPage);
+		printf("Virtual page %i removed.\n", vPage);
 
 	return true;
 }
@@ -223,6 +225,7 @@ AddrSpace::~AddrSpace()
 			if (pageTable[i].valid)
 			{
 				memMap->Clear(pageTable[i].physicalPage);
+				ipt[pageTable[i].physicalPage] = NULL;
 			}
 
 		delete[] pageTable;
