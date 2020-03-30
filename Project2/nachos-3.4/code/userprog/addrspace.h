@@ -34,7 +34,7 @@ class AddrSpace {
 
     void LoadPage(int vPage, int pPage);
     void HandlePageFault(int addr);
-    bool SwapOut(int pPage);
+    bool SwapOut(int vPage, int pPage);
     bool SwapIn(int vPage, int pPage); 
     //AR
     // valid - Set true if page is in physical memory.

@@ -140,7 +140,8 @@ void AddrSpace::HandlePageFault(int addr){
             //get that page number to swap
             if(pPage == -1){
                   pPage = (int)fifo.Remove(); // whatever yourr fifo queue thing is and however you get values off
-                  ipt[pPage]->space->SwapOut(pPage);
+				  vPage = ipt[pPage]->space->getPageNum(pPage);//Does the page exist?
+                  ipt[pPage]->space->SwapOut(vPage,pPage);
             }
            	 LoadPage((int)pPage, (int)(BadVAddrReg/PageSize));
             fifo.Append((void *)pPage);
@@ -159,7 +160,7 @@ void AddrSpace::HandlePageFault(int addr){
 				//if so, open swapfile
 				//write from physical page to swap at vpage location
 				sprintf(swapFileName, "%i.swap", t->getID());
-				SwapOut(randPage.physicalPage);
+				SwapOut(vPage,randPage.physicalPage);
 				ipt[randPage.physicalPage] = t;
 				//close swap
 				//delete pointer
@@ -195,7 +196,7 @@ void AddrSpace::LoadPage(int vPage, int pPage){
     
     swapFile = fileSystem->Open(swapFileName);
     // DONT INCLUDE NOFF SIZE HERE SINCE WE SKIPPED IT WHEN WRITING TO THE SWAPFILE
-    swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize));
+    swapFile->ReadAt(&(machine->mainMemory[pPage * PageSize]), PageSize,  (vPage * PageSize)); //the meat of loadPage
 	
 	switch(repChoice){
 		case 1:{
@@ -207,11 +208,9 @@ void AddrSpace::LoadPage(int vPage, int pPage){
 }
 
 
-bool AddrSpace::SwapOut(int pPage){
+bool AddrSpace::SwapOut(int pPage, int vPage){
 
-	int vPage = getPageNum(pPage);//Does the page exist?
-
-	if(vPage == -1){
+	if(vPage == -1){	
 		printf("ERROR: Could not swap page!\n");
 		return false;
 	}
