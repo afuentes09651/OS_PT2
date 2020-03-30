@@ -194,7 +194,7 @@ ExceptionHandler(ExceptionType which)
 
 				// Calculate needed memory space
 				AddrSpace *space;
-				space = new AddrSpace(executable);
+				space = new AddrSpace(executable, threadID);
 				delete executable;
 				// Do we have enough space?
 				if(!currentThread->killNewChild)	// If so...

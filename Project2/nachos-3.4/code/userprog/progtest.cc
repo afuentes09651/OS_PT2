@@ -56,7 +56,7 @@ StartProcess(char *filename)
 	else
 		printf("Worst-fit.\n\n");
 	
-    space = new AddrSpace(executable);    
+    space = new AddrSpace(executable, currentThread->getID());    
     currentThread->space = space;
     currentThread->setFN(filename);
 

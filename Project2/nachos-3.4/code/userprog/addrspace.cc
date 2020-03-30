@@ -57,7 +57,7 @@ SwapHeader(NoffHeader *noffH)
 //	"executable" is the file containing the object code to load into memory
 //----------------------------------------------------------------------
 
-AddrSpace::AddrSpace(OpenFile *executable)
+AddrSpace::AddrSpace(OpenFile *executable, int threadid)
 {
 	exeFile = executable;
 	NoffHeader noffH;
@@ -75,7 +75,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
 	size = numPages * PageSize;
 
 	// Create swap file
-	sprintf(swapFileName, "%i.swap", currentThread->getID());
+	sprintf(swapFileName, "%i.swap", threadid);
 	//Here, we create a swapFileName as ID.swap using unique thread ID
 	fileSystem->Create(swapFileName, size);
 	printf("\nSWAPFILE CREATION: Swapfile %s has been created.\n",swapFileName);
