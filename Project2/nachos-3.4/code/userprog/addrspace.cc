@@ -310,6 +310,9 @@ void AddrSpace::LoadPage(int vPage, int pPage)
 	delete swapFile;
 	printf("Closing swapfile %s...\n",swapFileName);
 	
+	for(int i = 200; i < 256; i++)
+		printf("%02X ", machine->mainMemory[pPage*PageSize + i]);
+	printf("\n");
 
 
 }
@@ -421,11 +424,13 @@ AddrSpace::~AddrSpace()
 				}
 				delete [] pageTable;
 
-		}
-		if(!fileSystem->Remove(swapFileName)){
-				printf("failed to delete swap file\n");
+
+
+
 
 		}
+		//		if (!fileSystem->Remove(swapFileName))
+		//			printf("failed to delete swap file\n");
 		memMap->Print();
 	}
 }

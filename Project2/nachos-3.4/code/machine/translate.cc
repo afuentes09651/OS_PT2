@@ -218,11 +218,16 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
       if (isTwoLevel) {
         //get the correct page table "coordinates"
 
-        int outerIndex = vpn/innerTableSize;
-        int innerIndex = vpn%innerTableSize;
+        int outerIndex = vpn/AddrSpace::innerTableSize;
+        int innerIndex = vpn%AddrSpace::innerTableSize;
         //printf("TRANSLATEouterIndex: %d\n", outerIndex);
         //printf("TRANSLATEinnerIndex: %d\n", innerIndex);
-
+        
+        if (vpn >= twoLevelPageTableSize) {
+          printf("two level: too lardge\n");
+        	  return AddressErrorException;
+        	} 
+        
         if (outerPageTable[outerIndex] == NULL) {
           printf("MISS: Creating new pageTable\n");
           
@@ -233,14 +238,9 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 
           return PageFaultException;
         }
-        if (vpn >= innerTableSize*outerTableSize) {
-            printf("two level: too lardge\n");
-        	  return AddressErrorException;
-        	} 
-        printf("trans2");
+
 
         entry = &outerPageTable[outerIndex][innerIndex];
-        printf("trans3");
 
       } else if (tlb == NULL) {		// => page table => vpn is index into table
       	if (vpn >= pageTableSize) {
@@ -271,12 +271,10 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
       						// but not in the TLB
       	}
       }
-      printf("trans6");
       if (entry->readOnly && writing) {	// trying to write to a read-only page
       	DEBUG('a', "%d mapped read-only at %d in TLB!\n", virtAddr, i);
       	return ReadOnlyException;
       }
-      printf("trans7");
       pageFrame = entry->physicalPage;
 
       // if the pageFrame is too big, there is something really wrong! 
@@ -285,20 +283,17 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
       	DEBUG('a', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
       	return BusErrorException;
       }
-      printf("trans8");
       entry->use = TRUE;		// set the use, dirty bits
       if (writing){
         entry->dirty = TRUE;
 
       }
-      printf("trans9");
 
       *physAddr = pageFrame * PageSize + offset;
       ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
-      printf("trans10");
 
       DEBUG('a', "phys addr = 0x%x\n", *physAddr);
-      
+      printf("VIRT: %d | phys: %d\n",virtAddr, *physAddr);
       return NoException;
     
 }

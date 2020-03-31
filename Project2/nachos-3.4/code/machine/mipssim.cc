@@ -104,7 +104,7 @@ Machine::OneInstruction(Instruction *instr)
     instr->value = raw;
     instr->Decode();
 
-    if (DebugIsEnabled('m')) {
+    //if (DebugIsEnabled('m')) {
        struct OpString *str = &opStrings[instr->opCode];
 
        ASSERT(instr->opCode <= MaxOpcode);
@@ -112,7 +112,7 @@ Machine::OneInstruction(Instruction *instr)
        printf(str->string, TypeToReg(str->args[0], instr), 
 		TypeToReg(str->args[1], instr), TypeToReg(str->args[2], instr));
        printf("\n");
-       }
+     //  }
     
     // Compute next pc, but don't install in case there's an error or branch.
     int pcAfter = registers[NextPCReg] + 4;

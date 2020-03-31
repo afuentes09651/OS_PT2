@@ -184,7 +184,7 @@ class Machine {
 
     TranslationEntry *pageTable;
     unsigned int pageTableSize;
-    unsigned int outerPageTableSize;
+    unsigned int twoLevelPageTableSize;
 
 
     TranslationEntry **outerPageTable;
@@ -194,8 +194,6 @@ class Machine {
 				// simulated instruction
     int runUntilTime;		// drop back into the debugger when simulated
 				// time reaches this value
-    int outerTableSize = 16;
-    int innerTableSize = 16;
 };
 
 extern void ExceptionHandler(ExceptionType which);
