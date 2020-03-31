@@ -293,7 +293,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
       ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
 
       DEBUG('a', "phys addr = 0x%x\n", *physAddr);
-      printf("VIRT: %d | phys: %d\n",virtAddr, *physAddr);
+
       return NoException;
     
 }

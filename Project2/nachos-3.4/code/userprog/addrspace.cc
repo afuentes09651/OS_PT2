@@ -19,7 +19,6 @@
 #include "system.h"
 #include "addrspace.h"
 #include "noff.h"
-#include "math.h"
 
 //----------------------------------------------------------------------
 // SwapHeader
@@ -309,10 +308,7 @@ void AddrSpace::LoadPage(int vPage, int pPage)
 
 	delete swapFile;
 	printf("Closing swapfile %s...\n",swapFileName);
-	
-	for(int i = 200; i < 256; i++)
-		printf("%02X ", machine->mainMemory[pPage*PageSize + i]);
-	printf("\n");
+
 
 
 }
@@ -448,36 +444,28 @@ AddrSpace::~AddrSpace()
 void AddrSpace::InitRegisters()
 {
 
+	printf("set initial reiggister values\n");
 
-	//if (!isTwoLevel) {
-		printf("set initial reiggister values\n");
+	int i;
 
-		int i;
+	for (i = 0; i < NumTotalRegs; i++)
+	machine->WriteRegister(i, 0);
 
-		for (i = 0; i < NumTotalRegs; i++)
-		machine->WriteRegister(i, 0);
+	// Initial program counter -- must be location of "Start"
+	machine->WriteRegister(PCReg, 0);
 
-		// Initial program counter -- must be location of "Start"
-		machine->WriteRegister(PCReg, 0);
+	// Need to also tell MIPS where next instruction is, because
+	// of branch delay possibility
+	machine->WriteRegister(NextPCReg, 4);
 
-		// Need to also tell MIPS where next instruction is, because
-		// of branch delay possibility
-		machine->WriteRegister(NextPCReg, 4);
+   // Set the stack register to the end of the address space, where we
+   // allocated the stack; but subtract off a bit, to make sure we don't
+   // accidentally reference off the end!
 
-	   // Set the stack register to the end of the address space, where we
-	   // allocated the stack; but subtract off a bit, to make sure we don't
-	   // accidentally reference off the end!
-	
-		if (isTwoLevel) {
-			machine->WriteRegister(StackReg, totalSize * PageSize - 16);
-			DEBUG('a', "Initializing stack register to %d\n", totalSize * PageSize - 16);
-			
-		} else {
-			machine->WriteRegister(StackReg, totalSize * PageSize - 16);
-			DEBUG('a', "Initializing stack register to %d\n", numPages * PageSize - 16);
-			
-		}
-	//}
+
+		machine->WriteRegister(StackReg, numPages * PageSize - 16);
+		DEBUG('a', "Initializing stack register to %d\n", numPages * PageSize - 16);
+
 
 }
 
