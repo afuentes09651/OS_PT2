@@ -46,7 +46,11 @@ class AddrSpace {
 
     int getPageNum(int pPage);
 
-   
+    static const int outerTableSize = 16;
+    static const int innerTableSize = 16;
+    static const int totalSize = outerTableSize * innerTableSize;
+
+
     //Swap *swap;
     unsigned int numPages;		// Number of pages in the virtual 
     //end AR
@@ -59,9 +63,6 @@ class AddrSpace {
     TranslationEntry **outerPageTable;
     
     
-    int outerTableSize = 16;
-    int innerTableSize = 16;
-    int totalSize = 256;
 
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!
