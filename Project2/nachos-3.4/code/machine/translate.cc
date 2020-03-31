@@ -87,7 +87,6 @@ ShortToMachine(unsigned short shortword) { return ShortToHost(shortword); }
 bool
 Machine::ReadMem(int addr, int size, int *value)
 {
-    printf("two level in translate reading\n");
   
     int data;
     ExceptionType exception;
@@ -138,7 +137,7 @@ Machine::ReadMem(int addr, int size, int *value)
 
 bool
 Machine::WriteMem(int addr, int size, int value)
-{  printf("two level in translate wrote");
+{  //printf("two level in translate wrote\n");
     ExceptionType exception;
     int physicalAddress;
      
@@ -217,15 +216,16 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 
 
       if (isTwoLevel) {
-        printf("two level in translateTrandlate\n");
         //get the correct page table "coordinates"
+
         int outerIndex = vpn/innerTableSize;
         int innerIndex = vpn%innerTableSize;
-        printf("outerIndex: %d\n", outerIndex);
-        printf("innerIndex: %d\n", innerIndex);
+        //printf("TRANSLATEouterIndex: %d\n", outerIndex);
+        //printf("TRANSLATEinnerIndex: %d\n", innerIndex);
 
         if (outerPageTable[outerIndex] == NULL) {
-          printf("two level: no inner table\n");
+          printf("MISS: Creating new pageTable\n");
+          
 
           return PageFaultException;
         } else if (!outerPageTable[outerIndex][innerIndex].valid) {
@@ -237,7 +237,10 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
             printf("two level: too lardge\n");
         	  return AddressErrorException;
         	} 
+        printf("trans2");
+
         entry = &outerPageTable[outerIndex][innerIndex];
+        printf("trans3");
 
       } else if (tlb == NULL) {		// => page table => vpn is index into table
       	if (vpn >= pageTableSize) {
@@ -268,12 +271,12 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
       						// but not in the TLB
       	}
       }
-
+      printf("trans6");
       if (entry->readOnly && writing) {	// trying to write to a read-only page
       	DEBUG('a', "%d mapped read-only at %d in TLB!\n", virtAddr, i);
       	return ReadOnlyException;
       }
-      
+      printf("trans7");
       pageFrame = entry->physicalPage;
 
       // if the pageFrame is too big, there is something really wrong! 
@@ -282,12 +285,20 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
       	DEBUG('a', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
       	return BusErrorException;
       }
+      printf("trans8");
       entry->use = TRUE;		// set the use, dirty bits
-      if (writing)
-  	entry->dirty = TRUE;
+      if (writing){
+        entry->dirty = TRUE;
+
+      }
+      printf("trans9");
+
       *physAddr = pageFrame * PageSize + offset;
       ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
+      printf("trans10");
+
       DEBUG('a', "phys addr = 0x%x\n", *physAddr);
+      
       return NoException;
     
 }
