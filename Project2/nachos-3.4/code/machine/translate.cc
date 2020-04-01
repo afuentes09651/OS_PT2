@@ -137,7 +137,7 @@ Machine::ReadMem(int addr, int size, int *value)
 
 bool
 Machine::WriteMem(int addr, int size, int value)
-{  //printf("two level in translate wrote\n");
+{
     ExceptionType exception;
     int physicalAddress;
      
@@ -202,11 +202,13 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
     
 
       // we must have either a TLB or a page table, but not both!
-      
+      //begin code changes by joseph kokenge
+
       if (!isTwoLevel){
         ASSERT(tlb == NULL || pageTable == NULL);	
         ASSERT(tlb != NULL || pageTable != NULL);
       }
+      //end code changes by joseph kokenge
 
   // calculate the virtual page number, and offset within the page,
   // from the virtual address
@@ -214,7 +216,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
       offset = (unsigned) virtAddr % PageSize;
       
 
-
+      //begin code changes by joseph kokenge
       if (isTwoLevel) {
         //get the correct page table "coordinates"
 
@@ -241,6 +243,7 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 
 
         entry = &outerPageTable[outerIndex][innerIndex];
+    //end code changes by joseph kokenge
 
       } else if (tlb == NULL) {		// => page table => vpn is index into table
       	if (vpn >= pageTableSize) {

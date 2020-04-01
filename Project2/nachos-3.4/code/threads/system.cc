@@ -22,7 +22,7 @@ Timer *timer;				// the hardware timer device,
 int threadChoice;
 int memChoice;
 int repChoice = 0;
-bool isTwoLevel = false;
+bool isTwoLevel = false; // code changes by joseph kokenge
 bool extraInput;
 bool pageFlag;
 int faultcount = 0;
@@ -154,7 +154,7 @@ Initialize(int argc, char **argv)
       isTwoLevel = true;
       argCount = 1;
   }
-  //end edit
+  //end edit by joseph kokenge
 
 #ifdef USER_PROGRAM
 	if (!strcmp(*argv, "-s"))

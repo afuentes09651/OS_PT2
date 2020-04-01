@@ -34,7 +34,7 @@ extern int threadChoice;
 extern int memChoice;
 extern int repChoice;
 extern int faultcount;
-extern bool isTwoLevel;
+extern bool isTwoLevel; // code changes by joseph kokenge
 extern bool extraInput;
 extern bool pageFlag;
 extern Thread **ipt;				//AH - Define IPT

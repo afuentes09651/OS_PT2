@@ -45,11 +45,12 @@ class AddrSpace {
     bool SwapIn(int vPage, int pPage); 
 
     int getPageNum(int pPage);
-
+    
+    // begin code changes by joseph kokenge
     static const int outerTableSize = 16;
     static const int innerTableSize = 16;
     static const int totalSize = outerTableSize * innerTableSize;
-
+  // end code changes by joseph kokenge
 
     //Swap *swap;
     unsigned int numPages;		// Number of pages in the virtual 
@@ -60,7 +61,7 @@ class AddrSpace {
     OpenFile *swapFile;
     
     
-    TranslationEntry **outerPageTable;
+    TranslationEntry **outerPageTable; // code changes by joseph kokenge
     
     
 

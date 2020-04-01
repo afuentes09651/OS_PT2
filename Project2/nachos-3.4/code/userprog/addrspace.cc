@@ -31,25 +31,28 @@
 //AR
 // valid - Set true if page is in physical memory.
 void AddrSpace::setValidity(int vPage, bool valid){
+	// begin code changes by joseph kokenge
 	if (isTwoLevel) {
 		int outerIndex = vPage/innerTableSize;
 
 		int innerIndex = vPage%innerTableSize;	
 
 		outerPageTable[outerIndex][innerIndex].valid = valid;
-		
+	// end code changes by joseph kokenge
 	} else {
 		pageTable[vPage].valid = valid;
 	}
 }
 //dirty - Set if page is modified by machine.
 void AddrSpace::setDirty(int vPage, bool dirty){
+	// begin code changes by joseph kokenge
 	if (isTwoLevel) {
 		int outerIndex = vPage/innerTableSize;
 
 		int innerIndex = vPage%innerTableSize;	
 
 		outerPageTable[outerIndex][innerIndex].dirty = dirty;
+		// end code changes by joseph kokenge
 	} else {
 		
 		pageTable[vPage].dirty = dirty;
@@ -57,6 +60,7 @@ void AddrSpace::setDirty(int vPage, bool dirty){
 }
 
 int AddrSpace::getPageNum(int pPage){
+	// begin code changes by joseph kokenge
 	if (isTwoLevel) {
 		for(int i = 0; i < outerTableSize; i++){
 			if (!(outerPageTable[i] == NULL)){
@@ -69,6 +73,7 @@ int AddrSpace::getPageNum(int pPage){
 				
 			}
 			return -1;		
+	// end code changes by joseph kokenge		
 	} else {
 		
 		for(int i = 0; i < numPages; i++){
@@ -148,7 +153,7 @@ AddrSpace::AddrSpace(OpenFile *executable, int threadid)
 	swapFile->WriteAt(exeBuff, exeSize, 0);
 
 	// Close to not consume mem
-	delete [] exeBuff;
+	delete [] exeBuff; //  code change by joseph kokenge
 	delete swapFile;
 
 	//If we get past the if statement, then there was sufficient space
@@ -199,10 +204,8 @@ AddrSpace::AddrSpace(OpenFile *executable, int threadid)
 
 
 void AddrSpace::HandlePageFault(int addr){
-	printf("fault");
-	//begin Code changes Joseph Kokenge
 	int vPage = addr / PageSize;
-	//printf("address: %d",addr);
+	//begin Code changes Joseph Kokenge
 
 	if (isTwoLevel) {
 		//printf("address: %d",addr);
@@ -278,6 +281,7 @@ void AddrSpace::HandlePageFault(int addr){
 void AddrSpace::LoadPage(int vPage, int pPage)
 {
 	printf("pPage: %i, vPage: %i\n", pPage, vPage);
+	//begin Code changes Joseph Kokenge
 
 	if (isTwoLevel) {
 		if (extraInput)
@@ -287,6 +291,7 @@ void AddrSpace::LoadPage(int vPage, int pPage)
 		int innerIndex = vPage%innerTableSize;	
 
 		outerPageTable[outerIndex][innerIndex].physicalPage = pPage;
+	//end Code changes Joseph Kokenge
 
 	} else {
 		if (extraInput)
@@ -326,6 +331,7 @@ bool AddrSpace::SwapOut(int pPage)
 	}
 
 	
+	//begin Code changes Joseph Kokenge
 
 	if (isTwoLevel) {
 
@@ -356,7 +362,8 @@ bool AddrSpace::SwapOut(int pPage)
 
 		return true;
 	
-		
+	//end Code changes Joseph Kokenge
+
 	} else {
 
 		if (pageTable[vPage].dirty)
@@ -396,6 +403,8 @@ AddrSpace::~AddrSpace()
 	// Only clear the memory if it was set to begin with
 	// which in turn only happens after space is set to true
 	if(space) {
+		//begin Code changes Joseph Kokenge
+
 		if (isTwoLevel) {
 			//delete here
 			//FROM SHAH it involves deleting your pointers of pagetable and clearing the bitMap used by the process.
@@ -411,6 +420,8 @@ AddrSpace::~AddrSpace()
 				}
 			}
 			delete [] outerPageTable;
+			//end Code changes Joseph Kokenge
+
 		}
 		else {
 			for(int i = 0; i < numPages; i++)	// We need an offset of startPage + numPages for clearing.
@@ -444,8 +455,6 @@ AddrSpace::~AddrSpace()
 void AddrSpace::InitRegisters()
 {
 
-	printf("set initial reiggister values\n");
-
 	int i;
 
 	for (i = 0; i < NumTotalRegs; i++)
@@ -458,13 +467,13 @@ void AddrSpace::InitRegisters()
 	// of branch delay possibility
 	machine->WriteRegister(NextPCReg, 4);
 
-   // Set the stack register to the end of the address space, where we
-   // allocated the stack; but subtract off a bit, to make sure we don't
-   // accidentally reference off the end!
+	// Set the stack register to the end of the address space, where we
+	// allocated the stack; but subtract off a bit, to make sure we don't
+	// accidentally reference off the end!
 
 
-		machine->WriteRegister(StackReg, numPages * PageSize - 16);
-		DEBUG('a', "Initializing stack register to %d\n", numPages * PageSize - 16);
+	machine->WriteRegister(StackReg, numPages * PageSize - 16);
+	DEBUG('a', "Initializing stack register to %d\n", numPages * PageSize - 16);
 
 
 }
@@ -479,8 +488,6 @@ void AddrSpace::InitRegisters()
 
 void AddrSpace::SaveState()
 {
-	printf("save");
-
 }
 
 //----------------------------------------------------------------------
@@ -493,12 +500,13 @@ void AddrSpace::SaveState()
 
 void AddrSpace::RestoreState()
 {
-	printf("restoring state\n");
 
+	//begin Code changes Joseph Kokenge
 
 	if (isTwoLevel) {
 		machine->outerPageTable = outerPageTable;
 		machine->twoLevelPageTableSize = totalSize;
+	//end Code changes Joseph Kokenge
 
 	} else {
 		machine->pageTable = pageTable;

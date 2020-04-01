@@ -54,8 +54,6 @@ void CheckEndian()
 
 Machine::Machine(bool debug)
 {
-    printf("machine");
-
     int i;
     for (i = 0; i < NumTotalRegs; i++)
         registers[i] = 0;
@@ -83,8 +81,6 @@ Machine::Machine(bool debug)
 
 Machine::~Machine()
 {
-    printf("~machine");
-
     delete [] mainMemory;
     if (tlb != NULL)
         delete [] tlb;
@@ -125,7 +121,6 @@ Machine::RaiseException(ExceptionType which, int badVAddr)
 
 void Machine::Debugger()
 {
-    printf("machinedebug");
 
     char *buf = new char[80];
     int num;
@@ -167,8 +162,7 @@ void Machine::Debugger()
 
 void
 Machine::DumpState()
-{    printf("machine dump");
-
+{
     int i;
     
     printf("Machine registers:\n");
@@ -216,8 +210,6 @@ int Machine::ReadRegister(int num)
 
 void Machine::WriteRegister(int num, int value)
     {
-       // printf("write");
-
 	ASSERT((num >= 0) && (num < NumTotalRegs));
 	// DEBUG('m', "WriteRegister %d, value %d\n", num, value);
 	registers[num] = value;
