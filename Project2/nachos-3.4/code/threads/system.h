@@ -33,6 +33,7 @@ extern Timer *timer;				// the hardware alarm clock
 extern int threadChoice;
 extern int memChoice;
 extern int repChoice;
+extern int faultcount;
 extern bool isTwoLevel;
 extern bool extraInput;
 extern bool pageFlag;

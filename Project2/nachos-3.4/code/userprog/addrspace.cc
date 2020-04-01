@@ -233,7 +233,7 @@ void AddrSpace::HandlePageFault(int addr){
 	}
 	//Begin changes Alec Hebert and Armando Fuentes
 		int pPage = memMap -> Find();
-		printf("PAGE FAULT\n");
+		printf("PAGE FAULT #%i\n",faultcount);
 		if (extraInput)
 			printf("\nPAGE FAULT: Process %i requests virtual page %i.\n", currentThread -> getID(), vPage);
 

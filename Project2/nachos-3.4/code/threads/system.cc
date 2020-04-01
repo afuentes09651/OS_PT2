@@ -25,6 +25,7 @@ int repChoice = 0;
 bool isTwoLevel = false;
 bool extraInput;
 bool pageFlag;
+int faultcount = 0;
 
 BitMap * memMap;
 Thread ** ipt = new Thread*[NumPhysPages];
