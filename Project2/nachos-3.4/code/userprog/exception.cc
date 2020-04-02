@@ -329,6 +329,7 @@ ExceptionHandler(ExceptionType which)
 	case PageFaultException: //begin code AF, code for the page fault exception
 	{
 		//printf("\npage fault hit\n");
+		faultcount++;
 		currentThread->space->HandlePageFault(machine->ReadRegister(BadVAddrReg));
 
 		//int vpNum = machine->ReadRegister(BadVAddrReg) / PageSize; //getting index of the virtual 

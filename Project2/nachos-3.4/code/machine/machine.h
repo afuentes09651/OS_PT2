@@ -32,7 +32,7 @@
 					// the disk sector size, for
 					// simplicity
 
-#define NumPhysPages    8
+#define NumPhysPages    32
 #define MemorySize 	(NumPhysPages * PageSize)
 #define TLBSize		4		// if there is a TLB, make it small
 
@@ -180,7 +180,14 @@ class Machine {
 					// "read-only" to Nachos kernel code
 
     TranslationEntry *pageTable;
+    
     unsigned int pageTableSize;
+    
+    //start code changes by joseph kokenge
+    unsigned int twoLevelPageTableSize;
+    TranslationEntry **outerPageTable;
+    //end code changes by joseph kokenge
+
 
   private:
     bool singleStep;		// drop back into the debugger after each

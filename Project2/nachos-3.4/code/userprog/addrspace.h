@@ -16,11 +16,15 @@
 #include "copyright.h"
 #include "filesys.h"
 #include "swap.h"
-#include "machine.h"
+
 #define UserStackSize		1024 	// increase this as necessary!
+
 
 class AddrSpace {
   public:
+    
+
+    
     AddrSpace(OpenFile *executable, int threadid);	// Create an address space,
 					// initializing it with the program
 					// stored in the file "executable"
@@ -32,28 +36,22 @@ class AddrSpace {
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch 
 
+    void setValidity(int vPage, bool valid);
+    void setDirty(int vPage, bool dirty);
+
     void LoadPage(int vPage, int pPage);
     void HandlePageFault(int addr);
     bool SwapOut(int pPage);
     bool SwapIn(int vPage, int pPage); 
-    //AR
-    // valid - Set true if page is in physical memory.
-    void setValidity(int vPage, bool valid){
-      pageTable[vPage].valid = valid;
-    }
-    //dirty - Set if page is modified by machine.
-    void setDirty(int vPage, bool dirty){
-      pageTable[vPage].dirty = dirty;
-    }    
 
-    int getPageNum(int pPage){
-      for(int i = 0; i < numPages; i++){
-        if(pageTable[i].physicalPage == pPage && pageTable[i].valid)
-          return i;
-      }
-      return -1;
-    }
-   
+    int getPageNum(int pPage);
+    
+    // begin code changes by joseph kokenge
+    static const int outerTableSize = 16;
+    static const int innerTableSize = 16;
+    static const int totalSize = outerTableSize * innerTableSize;
+  // end code changes by joseph kokenge
+
     //Swap *swap;
     unsigned int numPages;		// Number of pages in the virtual 
     //end AR
@@ -61,6 +59,11 @@ class AddrSpace {
     
     OpenFile *exeFile;
     OpenFile *swapFile;
+    
+    
+    TranslationEntry **outerPageTable; // code changes by joseph kokenge
+    
+    
 
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!

@@ -55,7 +55,6 @@ void CheckEndian()
 Machine::Machine(bool debug)
 {
     int i;
-
     for (i = 0; i < NumTotalRegs; i++)
         registers[i] = 0;
     mainMemory = new char[MemorySize];
@@ -122,6 +121,7 @@ Machine::RaiseException(ExceptionType which, int badVAddr)
 
 void Machine::Debugger()
 {
+
     char *buf = new char[80];
     int num;
 
@@ -201,7 +201,10 @@ Machine::DumpState()
 
 int Machine::ReadRegister(int num)
     {
+
 	ASSERT((num >= 0) && (num < NumTotalRegs));
+
+
 	return registers[num];
     }
 

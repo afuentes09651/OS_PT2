@@ -87,6 +87,7 @@ ShortToMachine(unsigned short shortword) { return ShortToHost(shortword); }
 bool
 Machine::ReadMem(int addr, int size, int *value)
 {
+  
     int data;
     ExceptionType exception;
     int physicalAddress;
@@ -185,12 +186,12 @@ Machine::WriteMem(int addr, int size, int value)
 
 ExceptionType
 Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
-{
+{  
+
     int i;
     unsigned int vpn, offset;
     TranslationEntry *entry;
     unsigned int pageFrame;
-
     DEBUG('a', "\tTranslate 0x%x, %s: ", virtAddr, writing ? "write" : "read");
 
 // check for alignment errors
@@ -199,57 +200,103 @@ Machine::Translate(int virtAddr, int* physAddr, int size, bool writing)
 	return AddressErrorException;
     }
     
-    // we must have either a TLB or a page table, but not both!
-    ASSERT(tlb == NULL || pageTable == NULL);	
-    ASSERT(tlb != NULL || pageTable != NULL);	
 
-// calculate the virtual page number, and offset within the page,
-// from the virtual address
-    vpn = (unsigned) virtAddr / PageSize;
-    offset = (unsigned) virtAddr % PageSize;
+      // we must have either a TLB or a page table, but not both!
+      //begin code changes by joseph kokenge
+
+      if (!isTwoLevel){
+        ASSERT(tlb == NULL || pageTable == NULL);	
+        ASSERT(tlb != NULL || pageTable != NULL);
+      }
+      //end code changes by joseph kokenge
+
+  // calculate the virtual page number, and offset within the page,
+  // from the virtual address
+      vpn = (unsigned) virtAddr / PageSize;
+      offset = (unsigned) virtAddr % PageSize;
+      
+
+      //begin code changes by joseph kokenge
+      if (isTwoLevel) {
+        //get the correct page table "coordinates"
+
+        int outerIndex = vpn/AddrSpace::innerTableSize;
+        int innerIndex = vpn%AddrSpace::innerTableSize;
+        //printf("TRANSLATEouterIndex: %d\n", outerIndex);
+        //printf("TRANSLATEinnerIndex: %d\n", innerIndex);
+        
+        if (vpn >= twoLevelPageTableSize) {
+          printf("two level: too lardge\n");
+        	  return AddressErrorException;
+        	} 
+        
+        if (outerPageTable[outerIndex] == NULL) {
+          printf("MISS: Creating new pageTable\n");
+          
+
+          return PageFaultException;
+        } else if (!outerPageTable[outerIndex][innerIndex].valid) {
+          printf("two level: invalid page in innertable\n");
+
+          return PageFaultException;
+        }
+
+
+        entry = &outerPageTable[outerIndex][innerIndex];
+    //end code changes by joseph kokenge
+
+      } else if (tlb == NULL) {		// => page table => vpn is index into table
+      	if (vpn >= pageTableSize) {
+      	    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
+      			virtAddr, pageTableSize);
+      	    return AddressErrorException;
+      	} else if (!pageTable[vpn].valid) {
+      	    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
+      			virtAddr, pageTableSize);
+      	    return PageFaultException;
+      	}
+      	entry = &pageTable[vpn];
+      } else {
+          for (entry = NULL, i = 0; i < TLBSize; i++)
+      	    if (tlb[i].valid && (((unsigned int)tlb[i].virtualPage) == vpn)) {
+  		        entry = &tlb[i];			// FOUND!
+  		    break;
+  	    }
+  
+  
+  
+  
+  
+      	if (entry == NULL) {				// not found
+          	    DEBUG('a', "*** no valid TLB entry found for this virtual page!\n");
+          	    return PageFaultException;		// really, this is a TLB fault,
+      						// the page may be in memory,
+      						// but not in the TLB
+      	}
+      }
+      if (entry->readOnly && writing) {	// trying to write to a read-only page
+      	DEBUG('a', "%d mapped read-only at %d in TLB!\n", virtAddr, i);
+      	return ReadOnlyException;
+      }
+      pageFrame = entry->physicalPage;
+
+      // if the pageFrame is too big, there is something really wrong! 
+      // An invalid translation was loaded into the page table or TLB. 
+      if (pageFrame >= NumPhysPages) { 
+      	DEBUG('a', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
+      	return BusErrorException;
+      }
+      entry->use = TRUE;		// set the use, dirty bits
+      if (writing){
+        entry->dirty = TRUE;
+
+      }
+
+      *physAddr = pageFrame * PageSize + offset;
+      ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
+
+      DEBUG('a', "phys addr = 0x%x\n", *physAddr);
+
+      return NoException;
     
-    if (tlb == NULL) {		// => page table => vpn is index into table
-	if (vpn >= pageTableSize) {
-	    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
-			virtAddr, pageTableSize);
-	    return AddressErrorException;
-	} else if (!pageTable[vpn].valid) {
-	    DEBUG('a', "virtual page # %d too large for page table size %d!\n", 
-			virtAddr, pageTableSize);
-	    return PageFaultException;
-	}
-	entry = &pageTable[vpn];
-    } else {
-        for (entry = NULL, i = 0; i < TLBSize; i++)
-    	    if (tlb[i].valid && (((unsigned int)tlb[i].virtualPage) == vpn)) {
-		entry = &tlb[i];			// FOUND!
-		break;
-	    }
-	if (entry == NULL) {				// not found
-    	    DEBUG('a', "*** no valid TLB entry found for this virtual page!\n");
-    	    return PageFaultException;		// really, this is a TLB fault,
-						// the page may be in memory,
-						// but not in the TLB
-	}
-    }
-
-    if (entry->readOnly && writing) {	// trying to write to a read-only page
-	DEBUG('a', "%d mapped read-only at %d in TLB!\n", virtAddr, i);
-	return ReadOnlyException;
-    }
-    pageFrame = entry->physicalPage;
-
-    // if the pageFrame is too big, there is something really wrong! 
-    // An invalid translation was loaded into the page table or TLB. 
-    if (pageFrame >= NumPhysPages) { 
-	DEBUG('a', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
-	return BusErrorException;
-    }
-    entry->use = TRUE;		// set the use, dirty bits
-    if (writing)
-	entry->dirty = TRUE;
-    *physAddr = pageFrame * PageSize + offset;
-    ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
-    DEBUG('a', "phys addr = 0x%x\n", *physAddr);
-    return NoException;
 }
