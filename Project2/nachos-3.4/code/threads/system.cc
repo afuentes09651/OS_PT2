@@ -152,7 +152,6 @@ Initialize(int argc, char **argv)
   //edit by Joseph Kokenge for Proj 4
   else if (!strcmp(*argv, "-H")) {
       isTwoLevel = true;
-      argCount = 1;
   }
   //end edit by joseph kokenge
 
