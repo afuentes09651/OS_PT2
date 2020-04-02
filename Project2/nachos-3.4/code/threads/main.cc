@@ -93,9 +93,13 @@ main(int argc, char **argv)
             printf (copyright);
 #ifdef USER_PROGRAM
         if (!strcmp(*argv, "-x")) {        	// run a user program
-	    ASSERT(argc > 1);
-            StartProcess(*(argv + 1));
-            argCount = 2;
+	    	if(*(argv+1) == NULL){
+				printf("No file given after -x command\n");
+		}  else {
+			     StartProcess(*(argv + 1));
+				argCount = 2;
+		}
+ 
         } else if (!strcmp(*argv, "-c")) {      // test the console
 	    if (argc == 1)
 	        ConsoleTest(NULL, NULL);

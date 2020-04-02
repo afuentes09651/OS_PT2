@@ -15,12 +15,17 @@
 
 #include "copyright.h"
 #include "filesys.h"
+#include "swap.h"
 
 #define UserStackSize		1024 	// increase this as necessary!
 
+
 class AddrSpace {
   public:
-    AddrSpace(OpenFile *executable);	// Create an address space,
+    
+
+    
+    AddrSpace(OpenFile *executable, int threadid);	// Create an address space,
 					// initializing it with the program
 					// stored in the file "executable"
     ~AddrSpace();			// De-allocate an address space
@@ -31,14 +36,43 @@ class AddrSpace {
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch 
 
+    void setValidity(int vPage, bool valid);
+    void setDirty(int vPage, bool dirty);
+
+    void LoadPage(int vPage, int pPage);
+    void HandlePageFault(int addr);
+    bool SwapOut(int pPage);
+    bool SwapIn(int vPage, int pPage); 
+
+    int getPageNum(int pPage);
+    
+    // begin code changes by joseph kokenge
+    static const int outerTableSize = 16;
+    static const int innerTableSize = 16;
+    static const int totalSize = outerTableSize * innerTableSize;
+  // end code changes by joseph kokenge
+
+    //Swap *swap;
+    unsigned int numPages;		// Number of pages in the virtual 
+    //end AR
   private:
+    
+    OpenFile *exeFile;
+    OpenFile *swapFile;
+    
+    
+    TranslationEntry **outerPageTable; // code changes by joseph kokenge
+    
+    
+
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!
-    unsigned int numPages;		// Number of pages in the virtual 
+
 					// address space
 	unsigned int startPage;		//Page number that the program starts at
-								//in physical memory
+  							//in physical memory
 	bool space;		//Boolean to remember if there was enough space or not
+  char swapFileName[12];
 };
 
 #endif // ADDRSPACE_H

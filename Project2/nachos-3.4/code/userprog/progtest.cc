@@ -24,6 +24,8 @@ void
 StartProcess(char *filename)
 {
     OpenFile *executable = fileSystem->Open(filename);
+
+    printf("\nAttempting to open file %s\n", filename);
 	
     AddrSpace *space;
 
@@ -31,23 +33,40 @@ StartProcess(char *filename)
 	printf("Unable to open file %s\n", filename);
 	return;
     }
-	
+	//Changes by Alec Hebert
+    if(extraInput)
+        printf("\nExtra Input enabled.\n");
+    printf("Number of Physical Pages: %i\n",NumPhysPages);
+    printf("Page Size: %i bytes.\n", PageSize);
+    printf("Page replacement algorithm chosen: ");
+    if(repChoice == 0)
+        printf("Demand Paging.\n");
+    else if(repChoice == -1)
+        printf("Demand Paging by default.\n");
+    else if(repChoice == 1)
+        printf("First in, First out.\n");
+    else
+        printf("Random Replacement.\n");
+    //End changes by Alec Hebert
 	printf("Memory allocation method chosen: ");
 	if(memChoice == 1)
-		printf("First-fit.\n");
+		printf("First-fit.\n\n");
 	else if (memChoice == 2)
-		printf("Best-fit.\n");
+		printf("Best-fit.\n\n");
 	else
-		printf("Worst-fit.\n");
+		printf("Worst-fit.\n\n");
 	
-    space = new AddrSpace(executable);    
+    space = new AddrSpace(executable, currentThread->getID());    
     currentThread->space = space;
+    currentThread->setFN(filename);
 
     delete executable;			// close file
 
     space->InitRegisters();		// set the initial register values
     space->RestoreState();		// load page table register
 
+    //space->swap = new Swap(1, 1);
+    
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;
 					// the address space exits

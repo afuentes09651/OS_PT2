@@ -194,13 +194,14 @@ ExceptionHandler(ExceptionType which)
 
 				// Calculate needed memory space
 				AddrSpace *space;
-				space = new AddrSpace(executable);
+				space = new AddrSpace(executable, threadID);
 				delete executable;
 				// Do we have enough space?
 				if(!currentThread->killNewChild)	// If so...
 				{
 					//edit AF, made the Thread name match the File Name. Removed the delete filename; that will be done in exit
-					Thread* execThread = new Thread(filename);	// Make a new thread for the process.
+					Thread* execThread = new Thread("Wubba", filename);	// Make a new thread for the process.
+					delete filename;
 					execThread->space = space;	// Set the address space to the new space.
 					execThread->setID(threadID);	// Set the unique thread ID
 					activeThreads->Append(execThread);	// Put it on the active list.
@@ -249,11 +250,10 @@ ExceptionHandler(ExceptionType which)
 				if(arg1 == 0)	// Did we exit properly?  If not, show an error message.
 					printf("Process %i exited normally!\n", currentThread->getID());
 				else
-					printf("ERROR: Process %i exited abnormally!\n", currentThread->getID());
+					printf("ERROR: Process %i exited abnormally! Code: %d\n", currentThread->getID(),arg1);
 				
 				if(currentThread->space)	// Delete the used memory from the process.
 					delete currentThread->space;
-					delete [] currentThread->getName(); //edit AF
 				currentThread->Finish();	// Delete the thread.
 
 				break;
@@ -328,27 +328,39 @@ ExceptionHandler(ExceptionType which)
 
 	case PageFaultException: //begin code AF, code for the page fault exception
 	{
-		int vpNum = machine->ReadRegister(BadVAddrReg) / PageSize; //getting index of the virtual 
-		printf("Page Fault: Process %d requested virtual page %d", currentThread->getID(), vpNum); //lets print that exception like the rest of them
+		//printf("\npage fault hit\n");
+		faultcount++;
+		currentThread->space->HandlePageFault(machine->ReadRegister(BadVAddrReg));
 
-		int index = memMap->Find(); //finding some free bits for us. it will be -1 if there arent any available
+		//int vpNum = machine->ReadRegister(BadVAddrReg) / PageSize; //getting index of the virtual 
 
-		if(index < 0){//if we never found a free page
-			printf("ERROR: No free page!\n");
-			Cleanup();
-		}
-		else{ //if we found a page 
-			printf("Assigning physical page %d", index); //guessing we are going to need this output
-			machine->pageTable[vpNum].physicalPage = index; //we were tasked to update currentThread’s pageTable[].physicalPage
-			machine->pageTable[vpNum].valid = TRUE; //tasked to also make the valid bit true
+	
+		// printf("Page Fault: Process %d requested virtual page %d\n", currentThread->getID(), vpNum); //lets print that exception like the rest of them
 
-			OpenFile *executable = fileSystem->Open(currentThread->getName()); //open the file
+		//int index = memMap->Find(); //finding some free bits for us. it will be -1 if there arent any available
+
+
+		// //currentThread->space->LoadPage(machine->ReadRegister(BadVAddrReg), index);
+
+		// if(index < 0){//if we never found a free page
+		// 	printf("ERROR: No free page!\n");
+		// 	Cleanup();
+		// }
+		// else{ //if we found a page 
+
+		// 	currentThread->space->LoadPage(machine->ReadRegister(BadVAddrReg), index); // index is physical page location
+
+			// printf("Assigning physical page %d", index); //guessing we are going to need this output
+			// machine->pageTable[vpNum].physicalPage = index; //we were tasked to update currentThread’s pageTable[].physicalPage
+			// machine->pageTable[vpNum].valid = TRUE; //tasked to also make the valid bit true
+
+			// printf("\nOpening file %s\n",currentThread->getFN());
+			// OpenFile *executable = fileSystem->Open(currentThread->getFN()); //open the file
 			
-			//load single page into main memory using ReadAt() 
-			executable->ReadAt(&(machine->mainMemory[index * PageSize]),
-			PageSize, sizeof(NoffHeader) + vpNum * PageSize);
-			delete executable; //close the file
-		}	
+			// //load single page into main memory using ReadAt() 
+			// executable->ReadAt(&(machine->mainMemory[index * PageSize]), PageSize, sizeof(NoffHeader) + vpNum * PageSize);
+			// delete executable; //close the file
+		// }	
 		break;
 	} //end code AF
 
@@ -361,7 +373,6 @@ ExceptionHandler(ExceptionType which)
 	}
 	delete [] ch;
 }
-
 
 static int SRead(int addr, int size, int id)  //input 0  output 1
 {
